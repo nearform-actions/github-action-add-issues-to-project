@@ -1556,14 +1556,45 @@ exports.debug = debug; // for test
 /***/ }),
 
 /***/ 348:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+//const core = require('@actions/core')
+//const { getGoodFirstIssues } = require('./get-issues')
+const { logError } = __nccwpck_require__(653)
+
+module.exports = async function () {
+  //const user = core.getInput('user') || 'fastify'
+  // const since = core.getInput('since') || '2022-01-10T00:00:00.000+05:30'
+
+  try {
+    // const goodFirstIssues = await getGoodFirstIssues(user, since)
+  } catch (e) {
+    logError(e)
+  }
+}
+
+
+/***/ }),
+
+/***/ 653:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-module.exports = async function () {
-  console.log('test')
-}
+const { debug, error, info, warning } = __nccwpck_require__(186)
+
+const stringify = msg =>
+  typeof msg === 'string' ? msg : msg.stack || msg.toString()
+
+const log = logger => message => logger(stringify(message))
+
+exports.logDebug = log(debug)
+exports.logError = log(error)
+exports.logInfo = log(info)
+exports.logWarning = log(warning)
 
 
 /***/ }),
