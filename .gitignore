@@ -1,7 +1,5 @@
 node_modules
 .eslintcache
-
-# JetBrains IDEs
-.idea
-# Visual Studio Code
 .vscode
+coverage
+.nyc_output
