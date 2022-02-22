@@ -17,14 +17,14 @@ query goodFirstIssuesRepos($searchQuery: String!, $since: String!) {
 }
 `
 
-async function getGoodFirstIssuesRepos(user, since) {
+async function getGoodFirstIssuesRepos(organization, since) {
   const graphqlWithAuth = graphql.defaults({
     headers: {
       authorization: `token ${process.env.GH_TOKEN}`
     }
   })
 
-  const searchQuery = `user:${user} good-first-issues:>=1`
+  const searchQuery = `org:${organization} good-first-issues:>=1`
 
   const {
     search: { nodes }
@@ -35,8 +35,8 @@ async function getGoodFirstIssuesRepos(user, since) {
   return nodes
 }
 
-async function getGoodFirstIssues(user, since) {
-  const repos = await getGoodFirstIssuesRepos(user, since)
+async function getGoodFirstIssues(organization, since) {
+  const repos = await getGoodFirstIssuesRepos(organization, since)
 
   const issues = repos.reduce((prev, curr) => {
     const {

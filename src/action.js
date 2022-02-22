@@ -4,12 +4,12 @@
 const { logError } = require('./log')
 
 module.exports = async function () {
-  //const user = core.getInput('user') || 'fastify'
-  // const since = core.getInput('since') || '2022-01-10T00:00:00.000+05:30'
+  // const organization = core.getInput('organization')
+  // const since = core.getInput('since')
 
   try {
-    // const goodFirstIssues = await getGoodFirstIssues(user, since)
-  } catch (e) {
-    logError(e)
+    //const goodFirstIssues = await getGoodFirstIssues(organization, since)
+  } catch (err) {
+    logError(err)
   }
 }
