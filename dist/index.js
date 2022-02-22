@@ -6412,8 +6412,8 @@ const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { logError } = __nccwpck_require__(353)
 
 module.exports = async function () {
-  const organization = core.getInput('organization') || 'fastify'
-  const updated = core.getInput('updated') || '2022-02-01..2022-02-22'
+  const organization = core.getInput('organization')
+  const updated = core.getInput('updated')
 
   try {
     // eslint-disable-next-line

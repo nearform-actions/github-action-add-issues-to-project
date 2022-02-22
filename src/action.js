@@ -4,8 +4,8 @@ const { getGoodFirstIssues } = require('./get-issues')
 const { logError } = require('./log')
 
 module.exports = async function () {
-  const organization = core.getInput('organization') || 'fastify'
-  const updated = core.getInput('updated') || '2022-02-01..2022-02-22'
+  const organization = core.getInput('organization')
+  const updated = core.getInput('updated')
 
   try {
     // eslint-disable-next-line
