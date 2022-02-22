@@ -14,19 +14,18 @@ query goodFirstIssues($queryString: String!) {
 }
 `
 
-async function getGoodFirstIssues(organization, updated) {
+async function getGoodFirstIssues(organization, timeInterval) {
   const graphqlWithAuth = graphql.defaults({
     headers: {
       authorization: `token  ${process.env.GH_TOKEN}`
     }
   })
 
-  const queryString = `org:${organization} is:open label:"good first issue" sort:updated-desc updated:${updated}`
+  const queryString = `org:${organization} is:open label:"good first issue" sort:updated-desc updated:${timeInterval}`
   const {
     search: { nodes }
   } = await graphqlWithAuth(query, {
-    queryString,
-    updated
+    queryString
   })
 
   return nodes

@@ -5,11 +5,11 @@ const { logError } = require('./log')
 
 module.exports = async function () {
   const organization = core.getInput('organization')
-  const updated = core.getInput('updated')
+  const timeInterval = core.getInput('timeInterval')
 
   try {
     // eslint-disable-next-line
-    const goodFirstIssues = await getGoodFirstIssues(organization, updated)
+    const goodFirstIssues = await getGoodFirstIssues(organization, timeInterval)
   } catch (err) {
     logError(err)
   }

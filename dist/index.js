@@ -6412,12 +6412,19 @@ const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { logError } = __nccwpck_require__(353)
 
 module.exports = async function () {
-  const organization = core.getInput('organization')
-  const updated = core.getInput('updated')
+  const organization = core.getInput('organization') || 'fastify'
+  const timeInterval = core.getInput('timeInterval') || '2022-02-01..2022-02-22'
 
   try {
     // eslint-disable-next-line
-    const goodFirstIssues = await getGoodFirstIssues(organization, updated)
+    async function test() {
+      const goodFirstIssues = await getGoodFirstIssues(
+        organization,
+        timeInterval
+      )
+      return goodFirstIssues
+    }
+    test().then(res => console.log(res))
   } catch (err) {
     logError(err)
   }
@@ -6446,19 +6453,18 @@ query goodFirstIssues($queryString: String!) {
 }
 `
 
-async function getGoodFirstIssues(organization, updated) {
+async function getGoodFirstIssues(organization, timeInterval) {
   const graphqlWithAuth = graphql.defaults({
     headers: {
-      authorization: `token  ${process.env.GH_TOKEN}`
+      authorization: `token  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`
     }
   })
 
-  const queryString = `org:${organization} is:open label:"good first issue" sort:updated-desc updated:${updated}`
+  const queryString = `org:${organization} is:open label:"good first issue" sort:updated-desc updated:${timeInterval}`
   const {
     search: { nodes }
   } = await graphqlWithAuth(query, {
-    queryString,
-    updated
+    queryString
   })
 
   return nodes
