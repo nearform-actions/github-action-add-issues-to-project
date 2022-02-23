@@ -20,6 +20,7 @@ tap.test('Get issues', async t => {
 
   const expectedResults = [{ id: '1' }, { id: '2' }, { id: '3' }]
   const results = await moduleToTest.getGoodFirstIssues(
+    'test-token',
     'test-organization',
     'test-timeInterval'
   )
