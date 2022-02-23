@@ -22,7 +22,7 @@ tap.test('Get issues', async t => {
   const results = await moduleToTest.getGoodFirstIssues(
     'test-token',
     'test-organization',
-    'test-timeInterval'
+    '1 day'
   )
   t.same(results, expectedResults)
 })
