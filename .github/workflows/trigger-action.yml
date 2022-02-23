@@ -3,8 +3,8 @@ name: Trigger Action
 on:
   workflow_dispatch:
   # Every day at 1 AM.
-  schedule:
-    - cron: '0 1 * * *'
+  #schedule:
+  #  - cron: '0 1 * * *'
 
 jobs:
   setup:
