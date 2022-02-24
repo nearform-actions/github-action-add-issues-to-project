@@ -1,0 +1,17 @@
+name: Trigger Action
+
+on:
+  workflow_dispatch:
+  # Every day at 1 AM.
+  #schedule:
+  #  - cron: '0 1 * * *'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: nearform/bench-board-good-first-issues@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          time-interval: '2022-02-01..2022-02-22'
+          organization : 'fastify'
