@@ -10,6 +10,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - uses: nearform/bench-board-good-first-issues@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
