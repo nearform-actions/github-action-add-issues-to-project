@@ -15,9 +15,10 @@ query goodFirstIssues($queryString: String!) {
 }
 `
 
-async function getGoodFirstIssues(token, organization, timeInterval) {
+async function getGoodFirstIssues(token, organizations, timeInterval) {
   const today = new Date().getTime()
   const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
+  const orgs = organizations.map(org => `org:${org}`).join(' ')
 
   const graphqlWithAuth = graphql.defaults({
     headers: {
@@ -25,7 +26,8 @@ async function getGoodFirstIssues(token, organization, timeInterval) {
     }
   })
 
-  const queryString = `org:${organization} is:open label:"good first issue" sort:updated-desc updated:">=${issuesTimeFrame}"`
+  const queryString = `${orgs} is:open label:"good first issue" sort:updated-desc updated:">=${issuesTimeFrame}"`
+
   const {
     search: { nodes }
   } = await graphqlWithAuth(query, {
