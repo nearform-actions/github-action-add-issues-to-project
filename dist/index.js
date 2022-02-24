@@ -6624,7 +6624,11 @@ query goodFirstIssues($queryString: String!) {
 async function getGoodFirstIssues(token, organizations, timeInterval) {
   const today = new Date().getTime()
   const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
-  const orgs = organizations.map(org => `org:${org}`).join(' ')
+  const orgs = organizations
+    .replace(/\s/g, '')
+    .split(',')
+    .map(org => `org:${org}`)
+    .join(' ')
 
   const graphqlWithAuth = graphql.defaults({
     headers: {
