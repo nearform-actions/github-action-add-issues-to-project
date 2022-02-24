@@ -1,4 +1,4 @@
-name: Add Good Issues to Bench
+name: Add Good First Issues to Bench
 
 on:
   workflow_dispatch:
