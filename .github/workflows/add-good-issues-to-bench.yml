@@ -1,4 +1,4 @@
-name: Trigger Action
+name: Add Good First Issues to Bench
 
 on:
   workflow_dispatch:
@@ -10,8 +10,9 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - uses: nearform/bench-board-good-first-issues@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          time-interval: '2022-02-01..2022-02-22'
+          time-interval: '1 day'
           organization : 'fastify'
