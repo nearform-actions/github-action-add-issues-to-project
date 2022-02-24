@@ -1,4 +1,4 @@
-name: Trigger Action
+name: Add Good Issues to Bench
 
 on:
   workflow_dispatch:
