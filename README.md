@@ -121,7 +121,7 @@ jobs:
 ## Inputs:
 - `organizations`: Organizations from which good-first-issues will be fetched. Multiple organizations can be specified by seperating with space.
 - `time-interval`:  Time range filter for issues. Uses ["ms"](https://www.npmjs.com/package/ms) package format
-- `project-id`: The node-id of the project board where issues will be added
+- `project-id`: The `id` number of the project board where issues will be added. This can be an organization project or a repository project.
 
 Note: 
 - By default, all issues will be added to the `Todo` column.

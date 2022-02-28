@@ -3,15 +3,17 @@ const core = require('@actions/core')
 const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
+const { getBoardIssues } = require('./get-board-issues')
 
-module.exports = async function ({ token = null, inputs = {} }) {
+module.exports = async function ({ github, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
     !token ||
-    !inputs['project-id']
+    !inputs['project-id'] ||
+    !github.repository_owner
   ) {
     throw new Error('Missing required inputs')
   }
@@ -34,12 +36,27 @@ module.exports = async function ({ token = null, inputs = {} }) {
       )}`
     )
 
+    if (goodFirstIssues.length === 0) {
+      logInfo('No good first issues found')
+      return
+    }
+
+    const { boardIssues = [], projectNodeId = null } = await getBoardIssues(
+      token,
+      github.repository_owner,
+      projectId
+    )
+
+    logInfo(`Found ${boardIssues.length} board issues}`)
+
     goodFirstIssues.map(async issue => {
-      await addIssueToBoard({
-        projectId,
-        contentId: issue.id,
-        token
-      })
+      if (!boardIssues.includes(issue.id) && projectNodeId) {
+        await addIssueToBoard({
+          projectId: projectNodeId,
+          contentId: issue.id,
+          token
+        })
+      }
     })
   } catch (err) {
     logError(err)

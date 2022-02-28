@@ -6571,6 +6571,63 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 962:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const { graphql } = __nccwpck_require__(467)
+const { logDebug } = __nccwpck_require__(353)
+
+const query = `
+query getAllBoardIssues($login: String!, $projectId: ID!) {
+  organization(login: $login) {
+    projectNext(id: $projectId) {
+      id
+      items (first: 100) {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+}
+`
+
+async function getAllBoardIssues(token, login, projectId) {
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      authorization: `token  ${token}`
+    }
+  })
+
+  const result = await graphqlWithAuth(query, {
+    login,
+    projectId
+  })
+
+  logDebug(`Get All Board Issues result - ${JSON.stringify(result)}`)
+
+  if (result.errors) {
+    logDebug(JSON.stringify(result.errors))
+    throw new Error(`Error getting issues from board`)
+  }
+
+  const projectNodeId = result.data.organization.projectNext.id
+  const boardIssues = result.data.organization.projectNext.items.nodes.map(
+    n => n.id
+  )
+
+  return { boardIssues, projectNodeId }
+}
+
+module.exports = {
+  getAllBoardIssues
+}
+
+
+/***/ }),
+
 /***/ 89:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -6634,15 +6691,17 @@ const core = __nccwpck_require__(186)
 const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
+const { getBoardIssues } = __nccwpck_require__(962)
 
-module.exports = async function ({ token = null, inputs = {} }) {
+module.exports = async function ({ github, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
     !token ||
-    !inputs['project-id']
+    !inputs['project-id'] ||
+    !github.repository_owner
   ) {
     throw new Error('Missing required inputs')
   }
@@ -6665,12 +6724,27 @@ module.exports = async function ({ token = null, inputs = {} }) {
       )}`
     )
 
+    if (goodFirstIssues.length === 0) {
+      logInfo('No good first issues found')
+      return
+    }
+
+    const { boardIssues = [], projectNodeId = null } = await getBoardIssues(
+      token,
+      github.repository_owner,
+      projectId
+    )
+
+    logInfo(`Found ${boardIssues.length} board issues}`)
+
     goodFirstIssues.map(async issue => {
-      await addIssueToBoard({
-        projectId,
-        contentId: issue.id,
-        token
-      })
+      if (!boardIssues.includes(issue.id) && projectNodeId) {
+        await addIssueToBoard({
+          projectId: projectNodeId,
+          contentId: issue.id,
+          token
+        })
+      }
     })
   } catch (err) {
     logError(err)
