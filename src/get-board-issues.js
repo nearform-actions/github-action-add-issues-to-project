@@ -36,10 +36,8 @@ async function getAllBoardIssues(token, login, projectId) {
     throw new Error(`Error getting issues from board`)
   }
 
-  const projectNodeId = result.data.organization.projectNext.id
-  const boardIssues = result.data.organization.projectNext.items.nodes.map(
-    n => n.id
-  )
+  const projectNodeId = result.organization.projectNext.id
+  const boardIssues = result.organization.projectNext.items.nodes.map(n => n.id)
 
   return { boardIssues, projectNodeId }
 }
