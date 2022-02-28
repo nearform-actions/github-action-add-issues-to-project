@@ -9,7 +9,12 @@ query getAllBoardIssues($login: String!, $projectId: Int!) {
       id
       items (first: 100) {
         nodes {
-          id
+      		content {
+            ... on Issue {
+              id
+              number
+            }
+          }        
         }
       }
     }
