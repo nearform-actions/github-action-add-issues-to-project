@@ -6636,6 +6636,7 @@ const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
 
 module.exports = async function ({ token = null, inputs = {} }) {
+  logDebug(`token partial: ${token.substring(0, 5)}`)
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   if (
