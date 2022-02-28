@@ -69,7 +69,7 @@ jobs:
           github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const script = require('./good-first-issues/dist/index.js')
-            await script({ github, context, token: "${{ steps.generate_token.outputs.token }}", inputs: ${{ toJSON(github.event.inputs) }} })
+            await script({ context, token: "${{ steps.generate_token.outputs.token }}", inputs: ${{ toJSON(github.event.inputs) }} })
 ```
 
 ## 2) Creating a PAT (personal access token)
@@ -115,7 +115,7 @@ jobs:
           github-token: ${{ secrets.GH_PROJECTS_PAT }}
           script: |
             const script = require('./good-first-issues/dist/index.js')
-            await script({ github, context, token: "${{ secrets.GH_PROJECTS_PAT }}", inputs: ${{ toJSON(github.event.inputs) }} })
+            await script({ context, token: "${{ secrets.GH_PROJECTS_PAT }}", inputs: ${{ toJSON(github.event.inputs) }} })
 ```
 
 ## Inputs:

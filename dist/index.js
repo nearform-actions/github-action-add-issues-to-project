@@ -6693,22 +6693,15 @@ const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
 const { getBoardIssues } = __nccwpck_require__(962)
 
-module.exports = async function ({
-  github,
-  context,
-  token = null,
-  inputs = {}
-}) {
+module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
-  logDebug(`github: ${JSON.stringify(github)}`)
-  logDebug(`context: ${JSON.stringify(context)}`)
 
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
     !token ||
     !inputs['project-id'] ||
-    !github.repository_owner
+    !context.payload.organization.login
   ) {
     throw new Error('Missing required inputs')
   }
@@ -6738,7 +6731,7 @@ module.exports = async function ({
 
     const { boardIssues = [], projectNodeId = null } = await getBoardIssues(
       token,
-      github.repository_owner,
+      context.payload.organization.login,
       projectId
     )
 
