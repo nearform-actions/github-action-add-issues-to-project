@@ -2168,7 +2168,7 @@ var y = d * 365.25;
  * @api public
  */
 
-module.exports = function (val, options) {
+module.exports = function(val, options) {
   options = options || {};
   var type = typeof val;
   if (type === 'string' && val.length > 0) {
@@ -6571,35 +6571,6 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 348:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const core = __nccwpck_require__(186)
-const { getGoodFirstIssues } = __nccwpck_require__(89)
-const { logError } = __nccwpck_require__(353)
-
-module.exports = async function () {
-  const token = core.getInput('github-token', { required: true })
-  const organizations = core.getInput('organizations', { required: true })
-  const timeInterval = core.getInput('time-interval', { required: true })
-
-  try {
-    // eslint-disable-next-line
-    const goodFirstIssues = await getGoodFirstIssues(
-      token,
-      organizations,
-      timeInterval
-    )
-  } catch (err) {
-    logError(err)
-  }
-}
-
-
-/***/ }),
-
 /***/ 89:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -6654,6 +6625,62 @@ module.exports = {
 
 /***/ }),
 
+/***/ 351:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const core = __nccwpck_require__(186)
+const { getGoodFirstIssues } = __nccwpck_require__(89)
+const { addIssueToBoard } = __nccwpck_require__(618)
+const { logError, logDebug, logInfo } = __nccwpck_require__(353)
+
+module.exports = async function ({ token = null, inputs = {} }) {
+  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
+
+  if (
+    !inputs['organizations'] ||
+    !inputs['time-interval'] ||
+    !token ||
+    !inputs['project-id']
+  ) {
+    throw new Error('Missing required inputs')
+  }
+
+  const {
+    organizations,
+    'time-interval': timeInterval,
+    'project-id': projectId
+  } = inputs
+
+  try {
+    const goodFirstIssues = await getGoodFirstIssues(
+      token,
+      organizations,
+      timeInterval
+    )
+    logInfo(
+      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
+        goodFirstIssues
+      )}`
+    )
+
+    goodFirstIssues.map(async issue => {
+      await addIssueToBoard({
+        projectId,
+        contentId: issue.id,
+        token
+      })
+    })
+  } catch (err) {
+    logError(err)
+    core.setFailed(err.message)
+  }
+}
+
+
+/***/ }),
+
 /***/ 353:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -6671,6 +6698,60 @@ exports.logDebug = log(debug)
 exports.logError = log(error)
 exports.logInfo = log(info)
 exports.logWarning = log(warning)
+
+
+/***/ }),
+
+/***/ 618:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { graphql } = __nccwpck_require__(467)
+const { logInfo, logDebug } = __nccwpck_require__(353)
+
+const addIssueToBoard = async ({ projectId, contentId, token }) => {
+  const mutation = `
+  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
+    addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
+      projectNextItem {
+        id
+        title
+      }
+    }
+  }`
+
+  const client = graphql.defaults({
+    headers: {
+      authorization: `token ${token}`
+    }
+  })
+
+  const result = await client(mutation, {
+    projectId,
+    contentId
+  })
+
+  logDebug(`Mutation result - ${JSON.stringify(result)}`)
+
+  if (result.errors) {
+    logDebug(JSON.stringify(result.errors))
+    throw new Error(`Error adding issue to board`)
+  }
+
+  if (!result?.addProjectNextItem?.projectNextItem?.id) {
+    throw new Error('Failed to add issue to board')
+  }
+
+  const { id, title = '' } = result.addProjectNextItem.projectNextItem
+
+  logInfo(`Added issue to board: id - ${id}, title - ${title}`)
+}
+
+module.exports = {
+  addIssueToBoard
+}
 
 
 /***/ }),
@@ -6841,19 +6922,12 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-
-
-const core = __nccwpck_require__(186)
-const run = __nccwpck_require__(348)
-
-run().catch(error => core.setFailed(error))
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(351);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;
