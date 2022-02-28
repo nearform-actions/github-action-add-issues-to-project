@@ -26,7 +26,7 @@ async function getAllBoardIssues(token, login, projectId) {
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId
+    projectId: Number(projectId)
   })
 
   logDebug(`Get All Board Issues result - ${JSON.stringify(result)}`)
