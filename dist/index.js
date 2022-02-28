@@ -6695,6 +6695,7 @@ const { getBoardIssues } = __nccwpck_require__(962)
 
 module.exports = async function ({ github, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
+  logDebug(`github: ${JSON.stringify(github)}`)
 
   if (
     !inputs['organizations'] ||
@@ -6735,7 +6736,10 @@ module.exports = async function ({ github, token = null, inputs = {} }) {
       projectId
     )
 
-    logInfo(`Found ${boardIssues.length} board issues}`)
+    logInfo(
+      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
+    )
+    logInfo(`Found project node id: ${projectNodeId}`)
 
     goodFirstIssues.map(async issue => {
       if (!boardIssues.includes(issue.id) && projectNodeId) {
