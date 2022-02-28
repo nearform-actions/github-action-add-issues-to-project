@@ -5,7 +5,7 @@ const { logDebug } = require('./log')
 const query = `
 query getAllBoardIssues($login: String!, $projectId: ID!) {
   organization(login: $login) {
-    projectNext(id: $projectId) {
+    projectNext(number: $projectId) {
       id
       items (first: 100) {
         nodes {
