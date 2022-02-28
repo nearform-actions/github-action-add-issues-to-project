@@ -6635,17 +6635,22 @@ const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
 
-module.exports = async function ({ inputs }) {
+module.exports = async function ({ inputs = {} }) {
+  if (
+    !inputs['organizations'] ||
+    !inputs['timeInterval'] ||
+    !inputs['token'] ||
+    !inputs['projectId']
+  ) {
+    throw new Error('Missing required inputs')
+  }
+
   const {
     organizations,
     'time-interval': timeInterval,
     'project-id': projectId,
     token
   } = inputs
-
-  if (!organizations || !timeInterval || !token || !projectId) {
-    throw new Error('Missing required inputs')
-  }
 
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
@@ -6724,10 +6729,17 @@ const addIssueToBoard = async ({ projectId, contentId, token }) => {
     }
   })
 
-  const result = await client(mutation, {
-    projectId,
-    contentId
-  })
+  let result
+  try {
+    result = await client(mutation, {
+      projectId,
+      contentId
+    })
+  } catch (error) {
+    console.log(JSON.stringify(error))
+  }
+
+  console.log('result', JSON.stringify(result))
 
   if (!result.addProjectNextItem.projectNextItem.id) {
     throw new Error('Failed to add issue to board')

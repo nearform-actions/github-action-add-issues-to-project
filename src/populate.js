@@ -20,10 +20,17 @@ const addIssueToBoard = async ({ projectId, contentId, token }) => {
     }
   })
 
-  const result = await client(mutation, {
-    projectId,
-    contentId
-  })
+  let result
+  try {
+    result = await client(mutation, {
+      projectId,
+      contentId
+    })
+  } catch (error) {
+    console.log(JSON.stringify(error))
+  }
+
+  console.log('result', JSON.stringify(result))
 
   if (!result.addProjectNextItem.projectNextItem.id) {
     throw new Error('Failed to add issue to board')
