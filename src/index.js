@@ -5,11 +5,13 @@ const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 
 module.exports = async function ({ inputs = {} }) {
+  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
+
   if (
     !inputs['organizations'] ||
-    !inputs['timeInterval'] ||
+    !inputs['time-interval'] ||
     !inputs['token'] ||
-    !inputs['projectId']
+    !inputs['project-id']
   ) {
     throw new Error('Missing required inputs')
   }
@@ -20,8 +22,6 @@ module.exports = async function ({ inputs = {} }) {
     'project-id': projectId,
     token
   } = inputs
-
-  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   try {
     const goodFirstIssues = await getGoodFirstIssues(
