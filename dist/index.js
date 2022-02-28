@@ -6580,7 +6580,7 @@ const { graphql } = __nccwpck_require__(467)
 const { logDebug } = __nccwpck_require__(353)
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: ID!) {
+query getAllBoardIssues($login: String!, $projectId: Int!) {
   organization(login: $login) {
     projectNext(number: $projectId) {
       id

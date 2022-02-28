@@ -3,7 +3,7 @@ const { graphql } = require('@octokit/graphql')
 const { logDebug } = require('./log')
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: ID!) {
+query getAllBoardIssues($login: String!, $projectId: Int!) {
   organization(login: $login) {
     projectNext(number: $projectId) {
       id
