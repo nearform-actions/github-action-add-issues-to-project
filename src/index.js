@@ -5,9 +5,15 @@ const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 const { getBoardIssues } = require('./get-board-issues')
 
-module.exports = async function ({ github, token = null, inputs = {} }) {
+module.exports = async function ({
+  github,
+  context,
+  token = null,
+  inputs = {}
+}) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
   logDebug(`github: ${JSON.stringify(github)}`)
+  logDebug(`context: ${JSON.stringify(context)}`)
 
   if (
     !inputs['organizations'] ||
