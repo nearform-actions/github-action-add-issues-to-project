@@ -69,7 +69,7 @@ jobs:
           github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const script = require('./good-first-issues/dist/index.js')
-            await script({ github, context, token: "${{ steps.generate_token.outputs.token }}", inputs: ${{ toJSON(github.event.inputs) }} })
+            await script({ context, token: "${{ steps.generate_token.outputs.token }}", inputs: ${{ toJSON(github.event.inputs) }} })
 ```
 
 ## 2) Creating a PAT (personal access token)
@@ -115,13 +115,13 @@ jobs:
           github-token: ${{ secrets.GH_PROJECTS_PAT }}
           script: |
             const script = require('./good-first-issues/dist/index.js')
-            await script({ github, context, token: "${{ secrets.GH_PROJECTS_PAT }}", inputs: ${{ toJSON(github.event.inputs) }} })
+            await script({ context, token: "${{ secrets.GH_PROJECTS_PAT }}", inputs: ${{ toJSON(github.event.inputs) }} })
 ```
 
 ## Inputs:
 - `organizations`: Organizations from which good-first-issues will be fetched. Multiple organizations can be specified by seperating with space.
 - `time-interval`:  Time range filter for issues. Uses ["ms"](https://www.npmjs.com/package/ms) package format
-- `project-id`: The node-id of the project board where issues will be added
+- `project-id`: The `id` number of the project board where issues will be added. This can be an organization project or a repository project.
 
 Note: 
 - By default, all issues will be added to the `Todo` column.
