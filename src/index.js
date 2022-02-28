@@ -5,7 +5,12 @@ const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 
 module.exports = async function ({ inputs }) {
-  const { organizations, timeInterval, projectId, token } = inputs
+  const {
+    organizations,
+    'time-interval': timeInterval,
+    'project-id': projectId,
+    token
+  } = inputs
 
   if (!organizations || !timeInterval || !token || !projectId) {
     throw new Error('Missing required inputs')

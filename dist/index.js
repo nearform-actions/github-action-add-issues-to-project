@@ -6636,7 +6636,12 @@ const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
 
 module.exports = async function ({ inputs }) {
-  const { organizations, timeInterval, projectId, token } = inputs
+  const {
+    organizations,
+    'time-interval': timeInterval,
+    'project-id': projectId,
+    token
+  } = inputs
 
   if (!organizations || !timeInterval || !token || !projectId) {
     throw new Error('Missing required inputs')
