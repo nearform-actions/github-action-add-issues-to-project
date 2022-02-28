@@ -1,13 +1,15 @@
 'use strict'
 
 const { graphql } = require('@octokit/graphql')
+const { logInfo } = require('./log')
 
-const addIssuesToBoard = async ({ projectId, contentId, token }) => {
+const addIssueToBoard = async ({ projectId, contentId, token }) => {
   const mutation = `
-  mutation addProjectNextItem($projectId: String!, $contentId: String!) {
+  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
     addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
       projectNextItem {
         id
+        title
       }
     }
   }`
@@ -23,16 +25,19 @@ const addIssuesToBoard = async ({ projectId, contentId, token }) => {
     contentId
   })
 
-  return JSON.stringify(result)
+  if (!result.addProjectNextItem.projectNextItem.id) {
+    throw new Error('Failed to add issue to board')
+  }
+
+  const { id, title = '' } = result.addProjectNextItem.projectNextItem
+
+  logInfo(`Added issue to board: id - ${id}, title - ${title}`)
+
+  return result.addProjectNextItem.projectNextItem.title
 }
 
-addIssuesToBoard({
-  projectId: 'PN_kwDOABeR784AA2ly',
-  contentId: 'I_kwDOG3mxN85Ef446'
-}).catch(err => console.log(err))
-
 module.exports = {
-  addIssuesToBoard
+  addIssueToBoard
 }
 
 /* response
