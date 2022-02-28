@@ -5,7 +5,6 @@ const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 
 module.exports = async function ({ token = null, inputs = {} }) {
-  logDebug(`token partial: ${token.substring(0, 5)}`)
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   if (
