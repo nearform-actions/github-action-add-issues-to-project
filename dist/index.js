@@ -6710,7 +6710,7 @@ exports.logWarning = log(warning)
 
 
 const { graphql } = __nccwpck_require__(467)
-const { logInfo } = __nccwpck_require__(353)
+const { logInfo, logDebug } = __nccwpck_require__(353)
 
 const addIssueToBoard = async ({ projectId, contentId, token }) => {
   const mutation = `
@@ -6729,44 +6729,30 @@ const addIssueToBoard = async ({ projectId, contentId, token }) => {
     }
   })
 
-  let result
-  try {
-    result = await client(mutation, {
-      projectId,
-      contentId
-    })
-  } catch (error) {
-    console.log(JSON.stringify(error))
+  const result = await client(mutation, {
+    projectId,
+    contentId
+  })
+
+  logDebug(`Mutation result - ${JSON.stringify(result)}`)
+
+  if (result.errors) {
+    logDebug(JSON.stringify(result.errors))
+    throw new Error(`Error adding issue to board`)
   }
 
-  console.log('result', JSON.stringify(result))
-
-  if (!result.addProjectNextItem.projectNextItem.id) {
+  if (!result?.addProjectNextItem?.projectNextItem?.id) {
     throw new Error('Failed to add issue to board')
   }
 
   const { id, title = '' } = result.addProjectNextItem.projectNextItem
 
   logInfo(`Added issue to board: id - ${id}, title - ${title}`)
-
-  return result.addProjectNextItem.projectNextItem.title
 }
 
 module.exports = {
   addIssueToBoard
 }
-
-/* response
-{
-  "data": {
-    "addProjectNextItem": {
-      "projectNextItem": {
-        "id": "MDE1OlByb2plY3ROZXh0SXRlbTM0MjEz"
-      }
-    }
-  }
-}
-*/
 
 
 /***/ }),
