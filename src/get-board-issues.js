@@ -42,7 +42,9 @@ async function getAllBoardIssues(token, login, projectId) {
   }
 
   const projectNodeId = result.organization.projectNext.id
-  const boardIssues = result.organization.projectNext.items.nodes.map(n => n.id)
+  const boardIssues = result.organization.projectNext.items.nodes.map(
+    n => n.content.id
+  )
 
   return { boardIssues, projectNodeId }
 }

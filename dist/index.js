@@ -6619,7 +6619,9 @@ async function getAllBoardIssues(token, login, projectId) {
   }
 
   const projectNodeId = result.organization.projectNext.id
-  const boardIssues = result.organization.projectNext.items.nodes.map(n => n.id)
+  const boardIssues = result.organization.projectNext.items.nodes.map(
+    n => n.content.id
+  )
 
   return { boardIssues, projectNodeId }
 }
@@ -6744,7 +6746,6 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     logInfo(`Found project node id: ${projectNodeId}`)
 
     goodFirstIssues.map(async issue => {
-      logDebug(`contentId: ${issue.id}`)
       if (!boardIssues.includes(issue.id) && projectNodeId) {
         await addIssueToBoard({
           projectId: projectNodeId,

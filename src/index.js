@@ -53,7 +53,6 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     logInfo(`Found project node id: ${projectNodeId}`)
 
     goodFirstIssues.map(async issue => {
-      logDebug(`contentId: ${issue.id}`)
       if (!boardIssues.includes(issue.id) && projectNodeId) {
         await addIssueToBoard({
           projectId: projectNodeId,
