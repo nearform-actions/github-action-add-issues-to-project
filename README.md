@@ -77,7 +77,7 @@ You can also configure this action by creating a GitHub [PAT ](https://docs.gith
 - repo (all)
 - admin:org -> read/write:org
 
-Once the PAT is created save it as a GitHub secret named `GITHUB_PROJECTS_PAT` in the repository
+Once the PAT is created save it as a GitHub secret named `GH_PROJECTS_PAT` in the repository
 
 Workflow configured with your PAT:  
 
@@ -103,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
         with:
-          token: ${{ secrets.GITHUB_PROJECTS_PAT }}
+          token: ${{ secrets.GH_PROJECTS_PAT }}
           repository: nearform/github-action-bench-good-first-issues
           ref: master
           path: good-first-issues
@@ -112,10 +112,10 @@ jobs:
           node-version: '16'
       - uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_PROJECTS_PAT }}
+          github-token: ${{ secrets.GH_PROJECTS_PAT }}
           script: |
             const script = require('./good-first-issues/dist/index.js')
-            await script({ github, context, token: ${{ secrets.GITHUB_PROJECTS_PAT }}, inputs: ${{ toJSON(github.event.inputs) }} })
+            await script({ github, context, token: ${{ secrets.GH_PROJECTS_PAT }}, inputs: ${{ toJSON(github.event.inputs) }} })
 ```
 
 ## Inputs:

@@ -6635,13 +6635,13 @@ const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
 
-module.exports = async function ({ inputs = {} }) {
+module.exports = async function ({ token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
 
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
-    !inputs['token'] ||
+    !token ||
     !inputs['project-id']
   ) {
     throw new Error('Missing required inputs')
@@ -6650,8 +6650,7 @@ module.exports = async function ({ inputs = {} }) {
   const {
     organizations,
     'time-interval': timeInterval,
-    'project-id': projectId,
-    token
+    'project-id': projectId
   } = inputs
 
   try {
