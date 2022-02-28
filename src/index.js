@@ -3,7 +3,7 @@ const core = require('@actions/core')
 const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
-const { getBoardIssues } = require('./get-board-issues')
+const { getAllBoardIssues } = require('./get-board-issues')
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
@@ -41,7 +41,7 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getBoardIssues(
+    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
       token,
       context.payload.organization.login,
       projectId

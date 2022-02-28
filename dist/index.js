@@ -6691,7 +6691,7 @@ const core = __nccwpck_require__(186)
 const { getGoodFirstIssues } = __nccwpck_require__(89)
 const { addIssueToBoard } = __nccwpck_require__(618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(353)
-const { getBoardIssues } = __nccwpck_require__(962)
+const { getAllBoardIssues } = __nccwpck_require__(962)
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
@@ -6729,7 +6729,7 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getBoardIssues(
+    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
       token,
       context.payload.organization.login,
       projectId
