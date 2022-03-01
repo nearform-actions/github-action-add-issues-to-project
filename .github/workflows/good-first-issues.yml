@@ -17,7 +17,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.GH_PROJECTS_PAT }}
           repository: nearform/github-action-bench-good-first-issues
