@@ -45,7 +45,7 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
       token,
       context.payload.organization.login,
       projectId
-    )
+    )()
 
     logInfo(
       `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
