@@ -2168,7 +2168,7 @@ var y = d * 365.25;
  * @api public
  */
 
-module.exports = function(val, options) {
+module.exports = function (val, options) {
   options = options || {};
   var type = typeof val;
   if (type === 'string' && val.length > 0) {
@@ -6580,16 +6580,23 @@ const { graphql } = __nccwpck_require__(467)
 const { logDebug } = __nccwpck_require__(353)
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: Int!) {
+query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
   organization(login: $login) {
     projectNext(number: $projectId) {
       id
-      items (first: 100) {
-        nodes {
-      		content {
-            ... on Issue {
-              id
-              number
+      items (first: 100, after: $cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            content {
+              ... on Issue {
+                id
+                number
+              }
             }
           }        
         }
@@ -6599,32 +6606,54 @@ query getAllBoardIssues($login: String!, $projectId: Int!) {
 }
 `
 
-async function getAllBoardIssues(token, login, projectId) {
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
+const getAllBoardIssues =
+  (token, login, projectId) =>
+  async ({ results, cursor } = { results: [] }) => {
+    const graphqlWithAuth = graphql.defaults({
+      headers: {
+        authorization: `token  ${token}`
+      }
+    })
+
+    const {
+      errors,
+      organization: {
+        projectNext: {
+          id: projectNodeId,
+          items: {
+            edges,
+            pageInfo: { hasNextPage, endCursor }
+          }
+        }
+      }
+    } = await graphqlWithAuth(query, {
+      cursor,
+      login,
+      projectId: Number(projectId)
+    })
+
+    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
+
+    if (errors) {
+      logDebug(JSON.stringify(errors))
+      throw new Error(`Error getting issues from board`)
     }
-  })
 
-  const result = await graphqlWithAuth(query, {
-    login,
-    projectId: Number(projectId)
-  })
+    results.push(...edges)
 
-  logDebug(`Get All Board Issues result - ${JSON.stringify(result)}`)
+    if (hasNextPage) {
+      await getAllBoardIssues(
+        token,
+        login,
+        projectId
+      )({
+        results,
+        cursor: endCursor
+      })
+    }
 
-  if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
-    throw new Error(`Error getting issues from board`)
+    return { boardIssues: results, projectNodeId }
   }
-
-  const projectNodeId = result.organization.projectNext.id
-  const boardIssues = result.organization.projectNext.items.nodes.map(
-    n => n.content.id
-  )
-
-  return { boardIssues, projectNodeId }
-}
 
 module.exports = {
   getAllBoardIssues
@@ -6738,7 +6767,7 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
       token,
       context.payload.organization.login,
       projectId
-    )
+    )()
 
     logInfo(
       `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
