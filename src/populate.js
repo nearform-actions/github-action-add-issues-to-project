@@ -3,13 +3,33 @@
 const { graphql } = require('@octokit/graphql')
 const { logInfo, logDebug } = require('./log')
 
-const addIssueToBoard = async ({ projectId, contentId, token }) => {
-  const mutation = `
+const addIssueToBoard = async ({
+  projectId,
+  columnId,
+  issue,
+  token,
+  isProjectBeta
+}) => {
+  const { id: issueId, title: issueTitle, url: issueUrl } = issue
+
+  const mutationProjectBeta = `
   mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
     addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
       projectNextItem {
         id
         title
+      }
+    }
+  }`
+
+  const mutationProjectBoard = `
+  mutation addIssueToBoard($columnId: ID!) {
+    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
+      projectColumn {
+        name
+        cards {
+          totalCount
+        }
       }
     }
   }`
@@ -20,10 +40,18 @@ const addIssueToBoard = async ({ projectId, contentId, token }) => {
     }
   })
 
-  const result = await client(mutation, {
-    projectId,
-    contentId
-  })
+  let result
+  if (isProjectBeta) {
+    result = await client(mutationProjectBeta, {
+      projectId,
+      contentId: issueId
+    })
+  } else {
+    result = await client(mutationProjectBoard, {
+      projectId,
+      columnId
+    })
+  }
 
   logDebug(`Mutation result - ${JSON.stringify(result)}`)
 
@@ -32,13 +60,13 @@ const addIssueToBoard = async ({ projectId, contentId, token }) => {
     throw new Error(`Error adding issue to board`)
   }
 
-  if (!result?.addProjectNextItem?.projectNextItem?.id) {
-    throw new Error('Failed to add issue to board')
+  if (isProjectBeta) {
+    if (!result?.addProjectNextItem?.projectNextItem?.id) {
+      throw new Error('Failed to add issue to board')
+    }
+    const { id, title = '' } = result.addProjectNextItem.projectNextItem
+    logInfo(`Added issue to board: id - ${id}, title - ${title}`)
   }
-
-  const { id, title = '' } = result.addProjectNextItem.projectNextItem
-
-  logInfo(`Added issue to board: id - ${id}, title - ${title}`)
 }
 
 module.exports = {
