@@ -38,8 +38,6 @@ async function findColumnIdByName(
     projectId: Number(projectId)
   })
 
-  logDebug(`Get project columns result - ${JSON.stringify(result)}`)
-
   if (result.errors) {
     logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project columns`)
@@ -57,7 +55,7 @@ async function findColumnIdByName(
 
   const columnId = column.id
 
-  logInfo(`Found column id is: ${columnId}`)
+  logInfo(`Found column id: ${columnId}`)
 
   return columnId
 }
@@ -66,11 +64,11 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   if (isProjectBeta) {
     return boardIssues.includes(issue.id)
   }
-
   return boardIssues.some(boardIssue => {
     return (
-      (boardIssue.content && boardIssue.content.id == issue.id) ||
-      (boardIssue.note && boardIssue.note.includes(issue.url))
+      (boardIssue.note && boardIssue.note.includes(issue.title)) ||
+      (boardIssue.content_url &&
+        boardIssue.content_url.includes(issue.resourcePath))
     )
   })
 }

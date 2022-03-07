@@ -8474,9 +8474,10 @@ function wrappy (fn, cb) {
 "use strict";
 
 const { graphql } = __nccwpck_require__(8467)
+const github = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
-const queryProjectBeta = `
+const query = `
 query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
   organization(login: $login) {
     projectNext(number: $projectId) {
@@ -8504,42 +8505,8 @@ query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
 }
 `
 
-const queryProjectBoard = `
-query getAllBoardIssues($login: String!, $projectId: Int!) {
-  organization(login: $login) {
-    project(number: $projectId) {
-      id
-      columns(first: 100) {
-        nodes {
-          id
-          name
-          cards(first: 100) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            edges {
-              cursor
-              node {
-                note
-                content {
-                  ... on Issue {
-                    id
-                    title
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-`
-
-const getAllBoardIssues =
-  (octokit, token, login, projectId, isProjectBeta) =>
+const getAllBoardIssuesProjectBeta =
+  (token, login, projectNumber) =>
   async ({ results, cursor } = { results: [] }) => {
     const graphqlWithAuth = graphql.defaults({
       headers: {
@@ -8547,111 +8514,99 @@ const getAllBoardIssues =
       }
     })
 
-    const projects = await octokit.request('GET org/{org}/projects', {
-      org: 'nearform'
-    })
-
-    logDebug(`PROJECT ${JSON.stringify(projects)}`)
-
-    return
-
-    const query = isProjectBeta ? queryProjectBeta : queryProjectBoard
-
-    const result = await graphqlWithAuth(query, {
-      cursor,
-      // login,
-      // projectId: Number(projectId)
-      queryString: 'org:nearform project:nearform/12'
-    })
-
-    // const { errors, organization } = result
-
     const {
       errors,
-      search: {
-        pageInfo: { hasNextPage, endCursor },
-        nodes
+      organization: {
+        projectNext: {
+          id: projectNodeId,
+          items: {
+            edges,
+            pageInfo: { hasNextPage, endCursor }
+          }
+        }
       }
-    } = result
+    } = await graphqlWithAuth(query, {
+      cursor,
+      login,
+      projectId: Number(projectNumber)
+    })
 
-    // let projectNodeId, edges, hasNextPage, endCursor
-
-    if (isProjectBeta) {
-      // projectNodeId = organization.projectNext.id
-      // edges = organization.projectNext.items.edges
-      // hasNextPage = organization.projectNext.items.pageInfo.hasNextPage
-      // endCursor = organization.projectNext.items.pageInfo.endCursor
-    } else {
-      // projectNodeId = organization.project.id
-      // edges = organization.project.columns.nodes[0].cards.edges
-      // hasNextPage =
-      //   organization.project.columns.nodes[0].cards.pageInfo.hasNextPage
-      // endCursor = organization.project.columns.nodes[0].cards.pageInfo.endCursor
-    }
-
-    logDebug(
-      ` NEXT PAGE - ${JSON.stringify(hasNextPage)}, END CURSOR ${endCursor}`
-    )
-
-    logDebug(`Get Board Issues result - ${JSON.stringify(nodes)}`)
+    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
 
     if (errors) {
       logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
 
-    results.push(...nodes)
+    results.push(...edges)
 
     if (hasNextPage) {
-      await getAllBoardIssues(
-        octokit,
+      await getAllBoardIssuesProjectBeta(
         token,
         login,
-        projectId,
-        isProjectBeta
+        projectNumber
       )({
         results,
         cursor: endCursor
       })
     }
 
-    let boardIssues
+    const boardIssues = results.reduce((prev, curr) => {
+      const {
+        node: { content }
+      } = curr
+      if (content && content.id) {
+        prev.push(content.id)
+      }
+      return prev
+    }, [])
 
-    if (isProjectBeta) {
-      boardIssues = results.reduce((prev, curr) => {
-        const {
-          node: { content }
-        } = curr
-        if (content && content.id) {
-          prev.push(content.id)
-        }
-        return prev
-      }, [])
-    } else {
-      logDebug(` RESULTS ${JSON.stringify(results)}`)
-      // const cards = result.organization.project.columns.nodes.flatMap(
-      //   n => n.cards.nodes
-      // )
-      // boardIssues = cards.reduce((prev, curr) => {
-      //   logDebug(`CURR ${curr}`)
-      //   if (curr.note || (curr.content && curr.content.id)) {
-      //     prev.push(curr)
-      //   }
-      //   return prev
-      // }, [])
-      // boardIssues = results[0].node.reduce((prev, curr) => {
-      //   logDebug(`CURR ${curr}`)
-      //   if (curr.note || (curr.content && curr.content.id)) {
-      //     prev.push(curr)
-      //   }
-      //   return prev
-      // }, [])
-      boardIssues = []
-      // boardIssues = nodes.map(n => n.id)
-    }
-    return
     return { boardIssues, projectNodeId }
   }
+
+const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
+  const octokit = github.getOctokit(token)
+  const projects = await octokit.paginate('GET /orgs/{org}/projects', {
+    org: login
+  })
+  const project = projects.find(p => p.number == projectNumber)
+  const projectId = project.id
+  const projectNodeId = project.node_id
+
+  const projectColumns = await octokit.paginate(
+    'GET /projects/{project_id}/columns',
+    {
+      project_id: projectId
+    }
+  )
+
+  const getCards = async projectColumns => {
+    const cardsArr = await Promise.all(
+      projectColumns.map(async c => {
+        const columnCards = await octokit.request(
+          `/projects/columns/${c.id}/cards`
+        )
+        return columnCards
+      })
+    )
+    return cardsArr.flatMap(c => c.data)
+  }
+  const boardIssues = await getCards(projectColumns)
+
+  return { boardIssues, projectNodeId }
+}
+
+const getAllBoardIssues = async (
+  token,
+  login,
+  projectNumber,
+  isProjectBeta
+) => {
+  if (isProjectBeta) {
+    return getAllBoardIssuesProjectBeta(token, login, projectNumber)()
+  }
+  return getAllBoardIssuesProjectBoard(token, login, projectNumber)
+}
 
 module.exports = {
   getAllBoardIssues
@@ -8676,6 +8631,7 @@ query goodFirstIssues($queryString: String!) {
       ... on Issue {
         id
         title
+        resourcePath
         url
       }
     }
@@ -8711,6 +8667,105 @@ async function getGoodFirstIssues(token, organizations, timeInterval) {
 
 module.exports = {
   getGoodFirstIssues
+}
+
+
+/***/ }),
+
+/***/ 4351:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const core = __nccwpck_require__(2186)
+const { getGoodFirstIssues } = __nccwpck_require__(2089)
+const { addIssueToBoard } = __nccwpck_require__(3618)
+const { logError, logDebug, logInfo } = __nccwpck_require__(4353)
+const { getAllBoardIssues } = __nccwpck_require__(7962)
+const { findColumnIdByName, checkIssueAlreadyExists } = __nccwpck_require__(6254)
+
+module.exports = async function ({ context, token = null, inputs = {} }) {
+  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
+
+  if (
+    !inputs['organizations'] ||
+    !inputs['time-interval'] ||
+    !token ||
+    !inputs['project-number'] ||
+    !inputs['project-beta'] ||
+    !context.payload.organization.login
+  ) {
+    throw new Error('Missing required inputs')
+  }
+
+  try {
+    const {
+      organizations,
+      'time-interval': timeInterval,
+      'project-number': projectNumber,
+      'column-name': columnName,
+      'project-beta': isProjectBeta
+    } = inputs
+
+    if (!isProjectBeta && !columnName) {
+      throw new Error('Column name is required')
+    }
+
+    const login = context.payload.organization.login
+
+    const goodFirstIssues = await getGoodFirstIssues(
+      token,
+      organizations,
+      timeInterval
+    )
+    logInfo(
+      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
+        goodFirstIssues
+      )}`
+    )
+
+    if (goodFirstIssues.length === 0) {
+      logInfo('No good first issues found')
+      return
+    }
+
+    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
+      token,
+      login,
+      projectNumber,
+      isProjectBeta
+    )
+
+    logInfo(
+      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
+    )
+
+    const columnId = await findColumnIdByName(
+      token,
+      login,
+      projectNumber,
+      columnName,
+      isProjectBeta
+    )
+
+    goodFirstIssues.map(async issue => {
+      if (
+        !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
+        projectNodeId
+      ) {
+        await addIssueToBoard({
+          projectId: projectNodeId,
+          columnId,
+          issue,
+          token,
+          isProjectBeta
+        })
+      }
+    })
+  } catch (err) {
+    logError(err)
+    core.setFailed(err.message)
+  }
 }
 
 
@@ -8863,8 +8918,6 @@ async function findColumnIdByName(
     projectId: Number(projectId)
   })
 
-  logDebug(`Get project columns result - ${JSON.stringify(result)}`)
-
   if (result.errors) {
     logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project columns`)
@@ -8882,7 +8935,7 @@ async function findColumnIdByName(
 
   const columnId = column.id
 
-  logInfo(`Found column id is: ${columnId}`)
+  logInfo(`Found column id: ${columnId}`)
 
   return columnId
 }
@@ -8891,11 +8944,11 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   if (isProjectBeta) {
     return boardIssues.includes(issue.id)
   }
-
   return boardIssues.some(boardIssue => {
     return (
-      (boardIssue.content && boardIssue.content.id == issue.id) ||
-      (boardIssue.note && boardIssue.note.includes(issue.url))
+      (boardIssue.note && boardIssue.note.includes(issue.title)) ||
+      (boardIssue.content_url &&
+        boardIssue.content_url.includes(issue.resourcePath))
     )
   })
 }
@@ -9074,125 +9127,12 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-
-const core = __nccwpck_require__(2186)
-const github = __nccwpck_require__(5438)
-const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(3618)
-const { logError, logDebug, logInfo } = __nccwpck_require__(4353)
-const { getAllBoardIssues } = __nccwpck_require__(7962)
-const { findColumnIdByName, checkIssueAlreadyExists } = __nccwpck_require__(6254)
-
-runAction()
-
-async function runAction() {
-  // logDebug(`Inputs: ${JSON.stringify(inputs)}`)
-
-  // if (
-  //   !inputs['organizations'] ||
-  //   !inputs['time-interval'] ||
-  //   !token ||
-  //   !inputs['project-id'] ||
-  //   !inputs['project-beta'] ||
-  //   !context.payload.organization.login
-  // ) {
-  //   throw new Error('Missing required inputs')
-  // }
-
-  const organizations = 'fastify'
-  const timeInterval = '10 days'
-  const projectId = 12
-  const token = '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'
-  const columnName = 'to do'
-  const isProjectBeta = false
-
-  const octokit = github.getOctokit(token)
-
-  try {
-    // const {
-    //   organizations,
-    //   'time-interval': timeInterval,
-    //   'project-id': projectId,
-    //   'project-beta': isProjectBeta
-    // } = inputs
-
-    // const login = context.payload.organization.login
-
-    const login = 'nearform'
-
-    // const columnId = await findColumnIdByName(
-    //   token,
-    //   login,
-    //   projectId,
-    //   columnName,
-    //   isProjectBeta
-    // )
-    // logDebug(`column id ${columnId}`)
-
-    // return
-
-    const goodFirstIssues = await getGoodFirstIssues(
-      token,
-      organizations,
-      timeInterval
-    )
-    logInfo(
-      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
-        goodFirstIssues
-      )}`
-    )
-
-    if (goodFirstIssues.length === 0) {
-      logInfo('No good first issues found')
-      return
-    }
-
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      octokit,
-      token,
-      login,
-      projectId,
-      isProjectBeta
-    )()
-
-    logInfo(
-      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
-    )
-
-    const columnId = await findColumnIdByName(
-      token,
-      login,
-      projectId,
-      columnName,
-      isProjectBeta
-    )
-    logDebug(`column id`, columnId)
-    goodFirstIssues.map(async issue => {
-      if (
-        !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
-        projectNodeId
-      ) {
-        await addIssueToBoard({
-          projectId: projectNodeId,
-          columnId,
-          issue,
-          token,
-          isProjectBeta
-        })
-      }
-    })
-  } catch (err) {
-    logError(err)
-    core.setFailed(err.message)
-  }
-}
-
-})();
-
-module.exports = __webpack_exports__;
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __nccwpck_require__(4351);
+/******/ 	module.exports = __webpack_exports__;
+/******/ 	
 /******/ })()
 ;

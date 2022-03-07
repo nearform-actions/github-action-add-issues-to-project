@@ -10,6 +10,7 @@ query goodFirstIssues($queryString: String!) {
       ... on Issue {
         id
         title
+        resourcePath
         url
       }
     }
