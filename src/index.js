@@ -4,7 +4,7 @@ const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 const { getAllBoardIssues } = require('./get-board-issues')
-const { findColumnIdByName, checkIssueAlreadyExists } = require('./util')
+const { findColumnIdByName, checkIssueAlreadyExists } = require('./utils')
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)

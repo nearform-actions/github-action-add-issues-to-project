@@ -1,6 +1,6 @@
 'use strict'
 const { graphql } = require('@octokit/graphql')
-const github = require('@actions/github')
+const { getOctokit } = require('@actions/github')
 const { logDebug } = require('./log')
 
 const query = `
@@ -40,29 +40,30 @@ const getAllBoardIssuesProjectBeta =
       }
     })
 
-    const {
-      errors,
-      organization: {
-        projectNext: {
-          id: projectNodeId,
-          items: {
-            edges,
-            pageInfo: { hasNextPage, endCursor }
-          }
-        }
-      }
-    } = await graphqlWithAuth(query, {
+    const result = await graphqlWithAuth(query, {
       cursor,
       login,
       projectId: Number(projectNumber)
     })
 
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
+    const { errors, organization } = result
 
     if (errors) {
       logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
+
+    const {
+      projectNext: {
+        id: projectNodeId,
+        items: {
+          edges,
+          pageInfo: { hasNextPage, endCursor }
+        }
+      }
+    } = organization
+
+    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
 
     results.push(...edges)
 
@@ -91,7 +92,7 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
-  const octokit = github.getOctokit(token)
+  const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
   })

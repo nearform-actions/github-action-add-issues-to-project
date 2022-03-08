@@ -8474,7 +8474,7 @@ function wrappy (fn, cb) {
 "use strict";
 
 const { graphql } = __nccwpck_require__(8467)
-const github = __nccwpck_require__(5438)
+const { getOctokit } = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
@@ -8514,29 +8514,30 @@ const getAllBoardIssuesProjectBeta =
       }
     })
 
-    const {
-      errors,
-      organization: {
-        projectNext: {
-          id: projectNodeId,
-          items: {
-            edges,
-            pageInfo: { hasNextPage, endCursor }
-          }
-        }
-      }
-    } = await graphqlWithAuth(query, {
+    const result = await graphqlWithAuth(query, {
       cursor,
       login,
       projectId: Number(projectNumber)
     })
 
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
+    const { errors, organization } = result
 
     if (errors) {
       logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
+
+    const {
+      projectNext: {
+        id: projectNodeId,
+        items: {
+          edges,
+          pageInfo: { hasNextPage, endCursor }
+        }
+      }
+    } = organization
+
+    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
 
     results.push(...edges)
 
@@ -8565,7 +8566,7 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
-  const octokit = github.getOctokit(token)
+  const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
   })
@@ -8682,7 +8683,7 @@ const { getGoodFirstIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard } = __nccwpck_require__(3618)
 const { logError, logDebug, logInfo } = __nccwpck_require__(4353)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
-const { findColumnIdByName, checkIssueAlreadyExists } = __nccwpck_require__(6254)
+const { findColumnIdByName, checkIssueAlreadyExists } = __nccwpck_require__(1608)
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
@@ -8874,7 +8875,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 6254:
+/***/ 1608:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
@@ -8901,7 +8902,7 @@ query getProjectColumns($login: String!, $projectId: Int!) {
 async function findColumnIdByName(
   token,
   login,
-  projectId,
+  projectNumber,
   columnName,
   isProjectBeta
 ) {
@@ -8915,7 +8916,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectId)
+    projectId: Number(projectNumber)
   })
 
   if (result.errors) {

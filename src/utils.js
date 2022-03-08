@@ -21,7 +21,7 @@ query getProjectColumns($login: String!, $projectId: Int!) {
 async function findColumnIdByName(
   token,
   login,
-  projectId,
+  projectNumber,
   columnName,
   isProjectBeta
 ) {
@@ -35,7 +35,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectId)
+    projectId: Number(projectNumber)
   })
 
   if (result.errors) {
