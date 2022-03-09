@@ -8975,19 +8975,19 @@ async function checkIsProjectBeta(token, login, projectNumber) {
     }
   })
 
-  const resultProjectBeta = await graphqlWithAuth(queryProjectBeta, {
+  const result = await graphqlWithAuth(queryProjectBeta, {
     login,
     projectNumber: Number(projectNumber)
   })
 
-  if (resultProjectBeta.errors) {
-    logDebug(JSON.stringify(resultProjectBeta.errors))
+  if (result.errors) {
+    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project beta`)
   }
 
   const {
     organization: { projectNext }
-  } = resultProjectBeta
+  } = result
 
   if (projectNext) {
     return true
