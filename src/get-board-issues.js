@@ -1,5 +1,6 @@
 'use strict'
 const { graphql } = require('@octokit/graphql')
+const { getOctokit } = require('@actions/github')
 const { logDebug } = require('./log')
 
 const query = `
@@ -19,6 +20,7 @@ query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
               ... on Issue {
                 id
                 number
+                title
               }
             }
           }        
@@ -29,8 +31,8 @@ query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
 }
 `
 
-const getAllBoardIssues =
-  (token, login, projectId) =>
+const getAllBoardIssuesProjectBeta =
+  (token, login, projectNumber) =>
   async ({ results, cursor } = { results: [] }) => {
     const graphqlWithAuth = graphql.defaults({
       headers: {
@@ -38,45 +40,100 @@ const getAllBoardIssues =
       }
     })
 
-    const {
-      errors,
-      organization: {
-        projectNext: {
-          id: projectNodeId,
-          items: {
-            edges,
-            pageInfo: { hasNextPage, endCursor }
-          }
-        }
-      }
-    } = await graphqlWithAuth(query, {
+    const result = await graphqlWithAuth(query, {
       cursor,
       login,
-      projectId: Number(projectId)
+      projectId: Number(projectNumber)
     })
 
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
+    const { errors, organization } = result
 
     if (errors) {
       logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
 
+    const {
+      projectNext: {
+        id: projectNodeId,
+        items: {
+          edges,
+          pageInfo: { hasNextPage, endCursor }
+        }
+      }
+    } = organization
+
+    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
+
     results.push(...edges)
 
     if (hasNextPage) {
-      await getAllBoardIssues(
+      await getAllBoardIssuesProjectBeta(
         token,
         login,
-        projectId
+        projectNumber
       )({
         results,
         cursor: endCursor
       })
     }
 
-    return { boardIssues: results, projectNodeId }
+    const boardIssues = results.reduce((prev, curr) => {
+      const {
+        node: { content }
+      } = curr
+      if (content && content.id) {
+        prev.push(content.id)
+      }
+      return prev
+    }, [])
+
+    return { boardIssues, projectNodeId }
   }
+
+const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
+  const octokit = getOctokit(token)
+  const projects = await octokit.paginate('GET /orgs/{org}/projects', {
+    org: login
+  })
+  const project = projects.find(p => p.number == projectNumber)
+  const projectId = project.id
+  const projectNodeId = project.node_id
+
+  const projectColumns = await octokit.paginate(
+    'GET /projects/{project_id}/columns',
+    {
+      project_id: projectId
+    }
+  )
+
+  const getCards = async projectColumns => {
+    const cardsArr = await Promise.all(
+      projectColumns.map(async c => {
+        const columnCards = await octokit.request(
+          `/projects/columns/${c.id}/cards`
+        )
+        return columnCards
+      })
+    )
+    return cardsArr.flatMap(c => c.data)
+  }
+  const boardIssues = await getCards(projectColumns)
+
+  return { boardIssues, projectNodeId }
+}
+
+const getAllBoardIssues = async (
+  token,
+  login,
+  projectNumber,
+  isProjectBeta
+) => {
+  if (isProjectBeta) {
+    return getAllBoardIssuesProjectBeta(token, login, projectNumber)()
+  }
+  return getAllBoardIssuesProjectBoard(token, login, projectNumber)
+}
 
 module.exports = {
   getAllBoardIssues

@@ -4,6 +4,7 @@ const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 const { getAllBoardIssues } = require('./get-board-issues')
+const { findColumnIdByName, checkIssueAlreadyExists } = require('./utils')
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
@@ -12,19 +13,28 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
     !token ||
-    !inputs['project-id'] ||
+    !inputs['project-number'] ||
+    !inputs['project-beta'] ||
     !context.payload.organization.login
   ) {
     throw new Error('Missing required inputs')
   }
 
-  const {
-    organizations,
-    'time-interval': timeInterval,
-    'project-id': projectId
-  } = inputs
-
   try {
+    const {
+      organizations,
+      'time-interval': timeInterval,
+      'project-number': projectNumber,
+      'column-name': columnName,
+      'project-beta': isProjectBeta
+    } = inputs
+
+    if (!isProjectBeta && !columnName) {
+      throw new Error('Column name is required')
+    }
+
+    const login = context.payload.organization.login
+
     const goodFirstIssues = await getGoodFirstIssues(
       token,
       organizations,
@@ -43,21 +53,34 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
 
     const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
       token,
-      context.payload.organization.login,
-      projectId
-    )()
+      login,
+      projectNumber,
+      isProjectBeta
+    )
 
     logInfo(
       `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
     )
-    logInfo(`Found project node id: ${projectNodeId}`)
+
+    const columnId = await findColumnIdByName(
+      token,
+      login,
+      projectNumber,
+      columnName,
+      isProjectBeta
+    )
 
     goodFirstIssues.map(async issue => {
-      if (!boardIssues.includes(issue.id) && projectNodeId) {
+      if (
+        !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
+        projectNodeId
+      ) {
         await addIssueToBoard({
           projectId: projectNodeId,
-          contentId: issue.id,
-          token
+          columnId,
+          issue,
+          token,
+          isProjectBeta
         })
       }
     })

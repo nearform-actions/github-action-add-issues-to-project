@@ -9,6 +9,9 @@ query goodFirstIssues($queryString: String!) {
     nodes {
       ... on Issue {
         id
+        title
+        resourcePath
+        url
       }
     }
   }
