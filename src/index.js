@@ -2,7 +2,7 @@
 const core = require('@actions/core')
 const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
-const { logError, logDebug, logInfo } = require('./log')
+const { logError, logInfo } = require('./log')
 const { getAllBoardIssues } = require('./get-board-issues')
 const {
   findColumnIdByName,
@@ -11,8 +11,6 @@ const {
 } = require('./utils')
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
-  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
-
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
@@ -27,9 +25,10 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     const {
       organizations,
       'time-interval': timeInterval,
-      'project-number': projectNumber,
       'column-name': columnName
     } = inputs
+
+    const projectNumber = Number(inputs['project-number'])
 
     const isProjectBeta = await checkIsProjectBeta(token, login, projectNumber)
 

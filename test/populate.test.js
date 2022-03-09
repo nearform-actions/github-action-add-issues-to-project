@@ -41,17 +41,16 @@ tap.test('Throw an errow if cannot perform mutation', async t => {
     }
   })
 
-  try {
-    await moduleToTest.addIssueToBoard({
+  t.rejects(
+    moduleToTest.addIssueToBoard({
       projectId: 'project-id',
       columnId: 'column-id',
       issue: { id: '1' },
       token: 'test-token',
       isProjectBeta: true
-    })
-  } catch (err) {
-    t.same(err, new Error('Error adding issue to board'))
-  }
+    }),
+    new Error('Error adding issue to board')
+  )
 })
 
 tap.test('Throw an errow if cannot add new issue', async t => {
@@ -67,17 +66,16 @@ tap.test('Throw an errow if cannot add new issue', async t => {
     }
   })
 
-  try {
-    await moduleToTest.addIssueToBoard({
+  t.rejects(
+    moduleToTest.addIssueToBoard({
       projectId: 'project-id',
       columnId: 'column-id',
       issue: { id: '1' },
       token: 'test-token',
       isProjectBeta: true
-    })
-  } catch (err) {
-    t.same(err, new Error('Failed to add issue to board'))
-  }
+    }),
+    new Error('Failed to add issue to board')
+  )
 })
 
 tap.test('Add card to project board', async t => {

@@ -198,16 +198,11 @@ tap.test('Throw an error if cannot get issues', async t => {
       }
     }
   })
-  try {
-    await moduleToTest.getAllBoardIssues(
-      'test-token',
-      'organization-login',
-      1,
-      true
-    )
-  } catch (err) {
-    t.same(err, new Error('Error getting issues from board'))
-  }
+
+  t.rejects(
+    moduleToTest.getAllBoardIssues('test-token', 'organization-login', 1, true),
+    new Error('Error getting issues from board')
+  )
 })
 
 tap.test('Get legacy projects board issues', async t => {

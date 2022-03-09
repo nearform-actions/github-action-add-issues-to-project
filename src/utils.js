@@ -10,7 +10,7 @@ async function findColumnIdByName(
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return null
+  if (isProjectBeta) return
 
   const query = `
   query getProjectColumns($login: String!, $projectNumber: Int!) {
@@ -18,8 +18,8 @@ async function findColumnIdByName(
         project(number: $projectNumber){
           columns(first: 100) {
           nodes {
-            id
-            name
+              id
+              name
             }
           }
         }
@@ -35,7 +35,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectNumber: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {
@@ -92,7 +92,7 @@ async function checkIsProjectBeta(token, login, projectNumber) {
 
   const result = await graphqlWithAuth(queryProjectBeta, {
     login,
-    projectNumber: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {
@@ -104,11 +104,7 @@ async function checkIsProjectBeta(token, login, projectNumber) {
     organization: { projectNext }
   } = result
 
-  if (projectNext) {
-    return true
-  }
-
-  return false
+  return !!projectNext
 }
 
 module.exports = {

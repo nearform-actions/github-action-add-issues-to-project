@@ -8478,9 +8478,9 @@ const { getOctokit } = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
+query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
-    projectNext(number: $projectId) {
+    projectNext(number: $projectNumber) {
       id
       items (first: 100, after: $cursor) {
         pageInfo {
@@ -8517,7 +8517,7 @@ const getAllBoardIssuesProjectBeta =
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
-      projectId: Number(projectNumber)
+      projectNumber
     })
 
     const { errors, organization } = result
@@ -8681,7 +8681,7 @@ module.exports = {
 const core = __nccwpck_require__(2186)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard } = __nccwpck_require__(3618)
-const { logError, logDebug, logInfo } = __nccwpck_require__(4353)
+const { logError, logInfo } = __nccwpck_require__(4353)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const {
   findColumnIdByName,
@@ -8690,8 +8690,6 @@ const {
 } = __nccwpck_require__(1608)
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
-  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
-
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
@@ -8706,9 +8704,10 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     const {
       organizations,
       'time-interval': timeInterval,
-      'project-number': projectNumber,
       'column-name': columnName
     } = inputs
+
+    const projectNumber = Number(inputs['project-number'])
 
     const isProjectBeta = await checkIsProjectBeta(token, login, projectNumber)
 
@@ -8717,6 +8716,12 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     }
 
     const login = context.payload.organization.login
+    const grapqhqlQuery = (token, query, parameters) =>
+      graphql.defaults({
+        headers: {
+          authorization: `token  ${token}`
+        }
+      })
 
     const goodFirstIssues = await getGoodFirstIssues(
       token,
@@ -8895,7 +8900,7 @@ async function findColumnIdByName(
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return null
+  if (isProjectBeta) return
 
   const query = `
   query getProjectColumns($login: String!, $projectNumber: Int!) {
@@ -8903,8 +8908,8 @@ async function findColumnIdByName(
         project(number: $projectNumber){
           columns(first: 100) {
           nodes {
-            id
-            name
+              id
+              name
             }
           }
         }
@@ -8920,7 +8925,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectNumber: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {
@@ -8977,7 +8982,7 @@ async function checkIsProjectBeta(token, login, projectNumber) {
 
   const result = await graphqlWithAuth(queryProjectBeta, {
     login,
-    projectNumber: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {
@@ -8989,17 +8994,14 @@ async function checkIsProjectBeta(token, login, projectNumber) {
     organization: { projectNext }
   } = result
 
-  if (projectNext) {
-    return true
-  }
-
-  return false
+  return !!projectNext
 }
 
 module.exports = {
   findColumnIdByName,
   checkIssueAlreadyExists,
-  checkIsProjectBeta
+  checkIsProjectBeta,
+  graphqlWithAuth
 }
 
 

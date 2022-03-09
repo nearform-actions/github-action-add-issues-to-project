@@ -26,7 +26,7 @@ tap.test('Find column id by name', async t => {
       }
     }
   })
-  const expectedResult = '1'
+
   const result = await moduleToTest.findColumnIdByName(
     'test-token',
     'test-organization',
@@ -35,7 +35,7 @@ tap.test('Find column id by name', async t => {
     false
   )
 
-  t.same(result, expectedResult)
+  t.same(result, '1')
 })
 
 tap.test('Throw an error if cannot get project columns', async t => {
@@ -56,20 +56,19 @@ tap.test('Throw an error if cannot get project columns', async t => {
     }
   })
 
-  try {
-    await moduleToTest.findColumnIdByName(
+  t.rejects(
+    moduleToTest.findColumnIdByName(
       'test-token',
       'test-organization',
       1,
       'to do',
       false
-    )
-  } catch (err) {
-    t.same(err, new Error('Error getting project columns'))
-  }
+    ),
+    new Error('Error getting project columns')
+  )
 })
 
-tap.test('Return null if project beta board', async t => {
+tap.test('Throws an error if cannot find column', async t => {
   const columnsMockData = {
     organization: {
       project: {
@@ -94,24 +93,23 @@ tap.test('Return null if project beta board', async t => {
     }
   })
 
-  try {
-    await moduleToTest.findColumnIdByName(
+  t.rejects(
+    moduleToTest.findColumnIdByName(
       'test-token',
       'test-organization',
       1,
       'to do',
       false
-    )
-  } catch (err) {
-    t.same(err, new Error('Could not find column named to do'))
-  }
+    ),
+    new Error('Could not find column named to do')
+  )
 })
 
-tap.test('Find column id by name', async t => {
+tap.test('Return if the project is beta', async t => {
   const moduleToTest = t.mock('../src/utils', {
     '@octokit/graphql': {}
   })
-  const expectedResult = null
+
   const result = await moduleToTest.findColumnIdByName(
     'test-token',
     'test-organization',
@@ -120,7 +118,7 @@ tap.test('Find column id by name', async t => {
     true
   )
 
-  t.same(result, expectedResult)
+  t.strictSame(result, undefined)
 })
 
 tap.test(
@@ -171,14 +169,14 @@ tap.test('Return true if project is beta', async t => {
       }
     }
   })
-  const expectedResult = true
+
   const result = await moduleToTest.checkIsProjectBeta(
     'test-token',
     'test-organization',
     1
   )
 
-  t.same(result, expectedResult)
+  t.same(result, true)
 })
 
 tap.test('Return false if project is not beta', async t => {
@@ -196,14 +194,14 @@ tap.test('Return false if project is not beta', async t => {
       }
     }
   })
-  const expectedResult = false
+
   const result = await moduleToTest.checkIsProjectBeta(
     'test-token',
     'test-organization',
     1
   )
 
-  t.same(result, expectedResult)
+  t.same(result, false)
 })
 
 tap.test('Throw an error if cannot get project beta', async t => {
@@ -223,9 +221,8 @@ tap.test('Throw an error if cannot get project beta', async t => {
     }
   })
 
-  try {
-    await moduleToTest.checkIsProjectBeta('test-token', 'test-organization', 1)
-  } catch (err) {
-    t.same(err, new Error('Error getting project beta'))
-  }
+  t.rejects(
+    moduleToTest.checkIsProjectBeta('test-token', 'test-organization', 1),
+    new Error('Error getting project beta')
+  )
 })
