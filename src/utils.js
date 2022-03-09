@@ -3,21 +3,6 @@
 const { graphql } = require('@octokit/graphql')
 const { logDebug, logInfo } = require('./log')
 
-const query = `
-query getProjectColumns($login: String!, $projectId: Int!) {
-    organization(login: $login) {
-      project(number: $projectId){
-        columns(first: 100) {
-         nodes {
-           id
-           name
-           }
-         }
-       }
-     }
-   }
-`
-
 async function findColumnIdByName(
   token,
   login,
@@ -27,6 +12,21 @@ async function findColumnIdByName(
 ) {
   if (isProjectBeta) return null
 
+  const query = `
+  query getProjectColumns($login: String!, $projectNumber: Int!) {
+      organization(login: $login) {
+        project(number: $projectNumber){
+          columns(first: 100) {
+          nodes {
+            id
+            name
+            }
+          }
+        }
+      }
+    }
+  `
+
   const graphqlWithAuth = graphql.defaults({
     headers: {
       authorization: `token  ${token}`
@@ -35,7 +35,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectNumber)
+    projectNumber: Number(projectNumber)
   })
 
   if (result.errors) {
@@ -73,7 +73,46 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   })
 }
 
+async function checkIsProjectBeta(token, login, projectNumber) {
+  const queryProjectBeta = `
+  query($login: String!, $projectNumber: Int!){
+    organization(login: $login){
+      projectNext(number: $projectNumber) {
+        id
+        title
+      }
+    }
+  }
+`
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      authorization: `token  ${token}`
+    }
+  })
+
+  const resultProjectBeta = await graphqlWithAuth(queryProjectBeta, {
+    login,
+    projectNumber: Number(projectNumber)
+  })
+
+  if (resultProjectBeta.errors) {
+    logDebug(JSON.stringify(resultProjectBeta.errors))
+    throw new Error(`Error getting project beta`)
+  }
+
+  const {
+    organization: { projectNext }
+  } = resultProjectBeta
+
+  if (projectNext) {
+    return true
+  }
+
+  return false
+}
+
 module.exports = {
   findColumnIdByName,
-  checkIssueAlreadyExists
+  checkIssueAlreadyExists,
+  checkIsProjectBeta
 }

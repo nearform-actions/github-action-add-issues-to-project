@@ -4,7 +4,11 @@ const { getGoodFirstIssues } = require('./get-issues')
 const { addIssueToBoard } = require('./populate')
 const { logError, logDebug, logInfo } = require('./log')
 const { getAllBoardIssues } = require('./get-board-issues')
-const { findColumnIdByName, checkIssueAlreadyExists } = require('./utils')
+const {
+  findColumnIdByName,
+  checkIssueAlreadyExists,
+  checkIsProjectBeta
+} = require('./utils')
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
   logDebug(`Inputs: ${JSON.stringify(inputs)}`)
@@ -14,7 +18,6 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     !inputs['time-interval'] ||
     !token ||
     !inputs['project-number'] ||
-    !inputs['project-beta'] ||
     !context.payload.organization.login
   ) {
     throw new Error('Missing required inputs')
@@ -25,9 +28,10 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
       organizations,
       'time-interval': timeInterval,
       'project-number': projectNumber,
-      'column-name': columnName,
-      'project-beta': isProjectBeta
+      'column-name': columnName
     } = inputs
+
+    const isProjectBeta = await checkIsProjectBeta(token, login, projectNumber)
 
     if (!isProjectBeta && !columnName) {
       throw new Error('Column name is required')

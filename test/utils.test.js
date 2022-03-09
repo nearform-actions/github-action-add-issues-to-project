@@ -152,3 +152,80 @@ tap.test('Return true if issue already exists on project board', async t => {
   t.same(result2, false)
   t.same(result3, true)
 })
+
+tap.test('Return true if project is beta', async t => {
+  const projectMockData = {
+    organization: {
+      projectNext: {
+        id: 1,
+        title: 'Project beta'
+      }
+    }
+  }
+  const moduleToTest = t.mock('../src/utils', {
+    '@octokit/graphql': {
+      graphql: {
+        defaults: () => {
+          return async () => projectMockData
+        }
+      }
+    }
+  })
+  const expectedResult = true
+  const result = await moduleToTest.checkIsProjectBeta(
+    'test-token',
+    'test-organization',
+    1
+  )
+
+  t.same(result, expectedResult)
+})
+
+tap.test('Return false if project is not beta', async t => {
+  const projectMockData = {
+    organization: {
+      projectNext: null
+    }
+  }
+  const moduleToTest = t.mock('../src/utils', {
+    '@octokit/graphql': {
+      graphql: {
+        defaults: () => {
+          return async () => projectMockData
+        }
+      }
+    }
+  })
+  const expectedResult = false
+  const result = await moduleToTest.checkIsProjectBeta(
+    'test-token',
+    'test-organization',
+    1
+  )
+
+  t.same(result, expectedResult)
+})
+
+tap.test('Throw an error if cannot get project beta', async t => {
+  const moduleToTest = t.mock('../src/utils', {
+    '@octokit/graphql': {
+      graphql: {
+        defaults: () => {
+          return async () => ({
+            errors: [
+              {
+                message: 'error'
+              }
+            ]
+          })
+        }
+      }
+    }
+  })
+
+  try {
+    await moduleToTest.checkIsProjectBeta('test-token', 'test-organization', 1)
+  } catch (err) {
+    t.same(err, new Error('Error getting project beta'))
+  }
+})
