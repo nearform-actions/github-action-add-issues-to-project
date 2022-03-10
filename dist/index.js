@@ -8478,9 +8478,9 @@ const { getOctokit } = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
+query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
-    projectNext(number: $projectId) {
+    projectNext(number: $projectNumber) {
       id
       items (first: 100, after: $cursor) {
         pageInfo {
@@ -8517,7 +8517,7 @@ const getAllBoardIssuesProjectBeta =
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
-      projectId: Number(projectNumber)
+      projectNumber
     })
 
     const { errors, organization } = result
@@ -8681,19 +8681,20 @@ module.exports = {
 const core = __nccwpck_require__(2186)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard } = __nccwpck_require__(3618)
-const { logError, logDebug, logInfo } = __nccwpck_require__(4353)
+const { logError, logInfo } = __nccwpck_require__(4353)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
-const { findColumnIdByName, checkIssueAlreadyExists } = __nccwpck_require__(1608)
+const {
+  findColumnIdByName,
+  checkIssueAlreadyExists,
+  checkIsProjectBeta
+} = __nccwpck_require__(1608)
 
 module.exports = async function ({ context, token = null, inputs = {} }) {
-  logDebug(`Inputs: ${JSON.stringify(inputs)}`)
-
   if (
     !inputs['organizations'] ||
     !inputs['time-interval'] ||
     !token ||
     !inputs['project-number'] ||
-    !inputs['project-beta'] ||
     !context.payload.organization.login
   ) {
     throw new Error('Missing required inputs')
@@ -8703,10 +8704,12 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     const {
       organizations,
       'time-interval': timeInterval,
-      'project-number': projectNumber,
-      'column-name': columnName,
-      'project-beta': isProjectBeta
+      'column-name': columnName
     } = inputs
+
+    const projectNumber = Number(inputs['project-number'])
+
+    const isProjectBeta = await checkIsProjectBeta(token, login, projectNumber)
 
     if (!isProjectBeta && !columnName) {
       throw new Error('Column name is required')
@@ -8884,21 +8887,6 @@ module.exports = {
 const { graphql } = __nccwpck_require__(8467)
 const { logDebug, logInfo } = __nccwpck_require__(4353)
 
-const query = `
-query getProjectColumns($login: String!, $projectId: Int!) {
-    organization(login: $login) {
-      project(number: $projectId){
-        columns(first: 100) {
-         nodes {
-           id
-           name
-           }
-         }
-       }
-     }
-   }
-`
-
 async function findColumnIdByName(
   token,
   login,
@@ -8906,7 +8894,24 @@ async function findColumnIdByName(
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return null
+  if (isProjectBeta) {
+    return
+  }
+
+  const query = `
+  query getProjectColumns($login: String!, $projectNumber: Int!) {
+      organization(login: $login) {
+        project(number: $projectNumber){
+          columns(first: 100) {
+          nodes {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `
 
   const graphqlWithAuth = graphql.defaults({
     headers: {
@@ -8916,7 +8921,7 @@ async function findColumnIdByName(
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {
@@ -8954,9 +8959,44 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   })
 }
 
+async function checkIsProjectBeta(token, login, projectNumber) {
+  const queryProjectBeta = `
+  query($login: String!, $projectNumber: Int!){
+    organization(login: $login){
+      projectNext(number: $projectNumber) {
+        id
+        title
+      }
+    }
+  }
+`
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      authorization: `token  ${token}`
+    }
+  })
+
+  const result = await graphqlWithAuth(queryProjectBeta, {
+    login,
+    projectNumber
+  })
+
+  if (result.errors) {
+    logDebug(JSON.stringify(result.errors))
+    throw new Error(`Error getting project beta`)
+  }
+
+  const {
+    organization: { projectNext }
+  } = result
+
+  return !!projectNext
+}
+
 module.exports = {
   findColumnIdByName,
-  checkIssueAlreadyExists
+  checkIssueAlreadyExists,
+  checkIsProjectBeta
 }
 
 
