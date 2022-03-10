@@ -9,6 +9,12 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
   organization(login: $login) {
     projectNext(number: $projectNumber) {
       id
+      fields(first: 100){
+        nodes{
+          name
+          settings
+        }
+      }
       items (first: 100, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -51,6 +57,7 @@ const getAllBoardIssuesProjectBeta =
     const {
       projectNext: {
         id: projectNodeId,
+        fields: { nodes: projectFields },
         items: {
           edges,
           pageInfo: { hasNextPage, endCursor }
@@ -59,7 +66,7 @@ const getAllBoardIssuesProjectBeta =
     } = organization
 
     logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
-
+    logDebug(`PROJECT FIELDS ${JSON.stringify(projectFields)}`)
     results.push(...edges)
 
     if (hasNextPage) {
@@ -82,7 +89,7 @@ const getAllBoardIssuesProjectBeta =
       return prev
     }, [])
 
-    return { boardIssues, projectNodeId }
+    return { boardIssues, projectNodeId, projectFields }
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {

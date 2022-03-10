@@ -5,7 +5,9 @@ const { logInfo, logDebug } = require('./log')
 
 const addIssueToBoard = async ({
   projectId,
+  // projectFields,
   columnId,
+  // columnName,
   issue,
   isProjectBeta
 }) => {
@@ -45,8 +47,6 @@ const addIssueToBoard = async ({
       columnId
     })
   }
-
-  logDebug(`Mutation result - ${JSON.stringify(result)}`)
 
   if (result.errors) {
     logDebug(JSON.stringify(result.errors))

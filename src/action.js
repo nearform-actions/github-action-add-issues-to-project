@@ -47,11 +47,11 @@ async function run() {
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      login,
-      projectNumber,
-      isProjectBeta
-    )
+    const {
+      boardIssues = [],
+      projectNodeId = null,
+      projectFields = {}
+    } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     logInfo(
       `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
@@ -71,7 +71,9 @@ async function run() {
       ) {
         await addIssueToBoard({
           projectId: projectNodeId,
+          projectFields,
           columnId,
+          columnName,
           issue,
           isProjectBeta
         })

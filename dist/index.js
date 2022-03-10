@@ -8476,7 +8476,7 @@ function wrappy (fn, cb) {
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(3618)
+const { addIssueToBoard } = __nccwpck_require__(3171)
 const { logInfo } = __nccwpck_require__(4353)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const {
@@ -8521,11 +8521,11 @@ async function run() {
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      login,
-      projectNumber,
-      isProjectBeta
-    )
+    const {
+      boardIssues = [],
+      projectNodeId = null,
+      projectFields = {}
+    } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     logInfo(
       `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
@@ -8545,7 +8545,9 @@ async function run() {
       ) {
         await addIssueToBoard({
           projectId: projectNodeId,
+          projectFields,
           columnId,
+          columnName,
           issue,
           isProjectBeta
         })
@@ -8582,6 +8584,12 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
   organization(login: $login) {
     projectNext(number: $projectNumber) {
       id
+      fields(first: 100){
+        nodes{
+          name
+          settings
+        }
+      }
       items (first: 100, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -8624,6 +8632,7 @@ const getAllBoardIssuesProjectBeta =
     const {
       projectNext: {
         id: projectNodeId,
+        fields: { nodes: projectFields },
         items: {
           edges,
           pageInfo: { hasNextPage, endCursor }
@@ -8632,7 +8641,7 @@ const getAllBoardIssuesProjectBeta =
     } = organization
 
     logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
-
+    logDebug(`PROJECT FIELDS ${JSON.stringify(projectFields)}`)
     results.push(...edges)
 
     if (hasNextPage) {
@@ -8655,7 +8664,7 @@ const getAllBoardIssuesProjectBeta =
       return prev
     }, [])
 
-    return { boardIssues, projectNodeId }
+    return { boardIssues, projectNodeId, projectFields }
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
@@ -8802,81 +8811,6 @@ exports.logWarning = log(warning)
 
 /***/ }),
 
-/***/ 3618:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { graphqlWithAuth } = __nccwpck_require__(5525)
-const { logInfo, logDebug } = __nccwpck_require__(4353)
-
-const addIssueToBoard = async ({
-  projectId,
-  columnId,
-  issue,
-  isProjectBeta
-}) => {
-  const { id: issueId, title: issueTitle, url: issueUrl } = issue
-
-  const mutationProjectBeta = `
-  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
-    addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
-      projectNextItem {
-        id
-        title
-      }
-    }
-  }`
-
-  const mutationProjectBoard = `
-  mutation addIssueToBoard($columnId: ID!) {
-    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
-      projectColumn {
-        name
-        cards {
-          totalCount
-        }
-      }
-    }
-  }`
-
-  let result
-  if (isProjectBeta) {
-    result = await graphqlWithAuth(mutationProjectBeta, {
-      projectId,
-      contentId: issueId
-    })
-  } else {
-    result = await graphqlWithAuth(mutationProjectBoard, {
-      projectId,
-      columnId
-    })
-  }
-
-  logDebug(`Mutation result - ${JSON.stringify(result)}`)
-
-  if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
-    throw new Error(`Error adding issue to board`)
-  }
-
-  if (isProjectBeta) {
-    if (!result?.addProjectNextItem?.projectNextItem?.id) {
-      throw new Error('Failed to add issue to board')
-    }
-    const { id, title = '' } = result.addProjectNextItem.projectNextItem
-    logInfo(`Added issue to board: id - ${id}, title - ${title}`)
-  }
-}
-
-module.exports = {
-  addIssueToBoard
-}
-
-
-/***/ }),
-
 /***/ 1608:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -8983,6 +8917,14 @@ module.exports = {
   checkIssueAlreadyExists,
   checkIsProjectBeta
 }
+
+
+/***/ }),
+
+/***/ 3171:
+/***/ ((module) => {
+
+module.exports = eval("require")("./populate");
 
 
 /***/ }),
