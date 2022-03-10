@@ -33,4 +33,8 @@ jobs:
         uses: nearform/github-action-add-issues-to-project@master
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
+          organizations: ${{ github.event.inputs.organizations }}
+          time-interval: ${{ github.event.inputs.time-interval }}
+          project-number: ${{ github.event.inputs.project-number }}
+          column-name: ${{ github.event.inputs.column-name }}
 
