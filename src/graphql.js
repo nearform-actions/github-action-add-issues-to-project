@@ -6,7 +6,7 @@ async function graphqlWithAuth(query, parameters) {
   const token = core.getInput('github-token', { required: true })
   const graphqlQuery = graphql.defaults({
     headers: {
-      authorization: `token  ${token}`
+      authorization: `token ${token}`
     }
   })
   return graphqlQuery(query, parameters)
