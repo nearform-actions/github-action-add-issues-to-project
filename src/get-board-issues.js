@@ -1,5 +1,6 @@
 'use strict'
-const { graphql } = require('@octokit/graphql')
+const core = require('@actions/core')
+const { graphqlWithAuth } = require('./graphql')
 const { getOctokit } = require('@actions/github')
 const { logDebug } = require('./log')
 
@@ -32,14 +33,8 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
 `
 
 const getAllBoardIssuesProjectBeta =
-  (token, login, projectNumber) =>
+  (login, projectNumber) =>
   async ({ results, cursor } = { results: [] }) => {
-    const graphqlWithAuth = graphql.defaults({
-      headers: {
-        authorization: `token  ${token}`
-      }
-    })
-
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
@@ -69,7 +64,6 @@ const getAllBoardIssuesProjectBeta =
 
     if (hasNextPage) {
       await getAllBoardIssuesProjectBeta(
-        token,
         login,
         projectNumber
       )({
@@ -91,7 +85,8 @@ const getAllBoardIssuesProjectBeta =
     return { boardIssues, projectNodeId }
   }
 
-const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
+const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
+  const token = core.getInput('github-token', { required: true })
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
@@ -123,16 +118,11 @@ const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
   return { boardIssues, projectNodeId }
 }
 
-const getAllBoardIssues = async (
-  token,
-  login,
-  projectNumber,
-  isProjectBeta
-) => {
+const getAllBoardIssues = async (login, projectNumber, isProjectBeta) => {
   if (isProjectBeta) {
-    return getAllBoardIssuesProjectBeta(token, login, projectNumber)()
+    return getAllBoardIssuesProjectBeta(login, projectNumber)()
   }
-  return getAllBoardIssuesProjectBoard(token, login, projectNumber)
+  return getAllBoardIssuesProjectBoard(login, projectNumber)
 }
 
 module.exports = {

@@ -1,10 +1,8 @@
 'use strict'
-
-const { graphql } = require('@octokit/graphql')
+const { graphqlWithAuth } = require('./graphql')
 const { logDebug, logInfo } = require('./log')
 
 async function findColumnIdByName(
-  token,
   login,
   projectNumber,
   columnName,
@@ -28,12 +26,6 @@ async function findColumnIdByName(
       }
     }
   `
-
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
 
   const result = await graphqlWithAuth(query, {
     login,
@@ -75,7 +67,7 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   })
 }
 
-async function checkIsProjectBeta(token, login, projectNumber) {
+async function checkIsProjectBeta(login, projectNumber) {
   const queryProjectBeta = `
   query($login: String!, $projectNumber: Int!){
     organization(login: $login){
@@ -86,12 +78,6 @@ async function checkIsProjectBeta(token, login, projectNumber) {
     }
   }
 `
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
-
   const result = await graphqlWithAuth(queryProjectBeta, {
     login,
     projectNumber

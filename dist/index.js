@@ -8468,12 +8468,112 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 3348:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+const core = __nccwpck_require__(2186)
+const github = __nccwpck_require__(5438)
+const { getGoodFirstIssues } = __nccwpck_require__(2089)
+const { addIssueToBoard } = __nccwpck_require__(3618)
+const { logInfo } = __nccwpck_require__(4353)
+const { getAllBoardIssues } = __nccwpck_require__(7962)
+const {
+  findColumnIdByName,
+  checkIssueAlreadyExists,
+  checkIsProjectBeta
+} = __nccwpck_require__(1608)
+
+async function run() {
+  core.info(`
+    *** ACTION RUN - START ***
+    `)
+
+  try {
+    const organizations = core.getInput('organizations', { required: true })
+    const timeInterval = core.getInput('time-interval', { required: true })
+    let projectNumber =
+      core.getInput('project-number', { required: true }) &&
+      Number(core.getInput('project-number'))
+    const columnName = core.getInput('column-name')
+    const login = github.context.login
+
+    const isProjectBeta = await checkIsProjectBeta(login, projectNumber)
+
+    if (!isProjectBeta && !columnName) {
+      throw new Error('Column name is required for legacy project boards')
+    }
+
+    const goodFirstIssues = await getGoodFirstIssues(
+      organizations,
+      timeInterval
+    )
+
+    logInfo(
+      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
+        goodFirstIssues
+      )}`
+    )
+
+    if (goodFirstIssues.length === 0) {
+      logInfo('No good first issues found')
+      return
+    }
+
+    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
+      login,
+      projectNumber,
+      isProjectBeta
+    )
+
+    logInfo(
+      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
+    )
+
+    const columnId = await findColumnIdByName(
+      login,
+      projectNumber,
+      columnName,
+      isProjectBeta
+    )
+
+    goodFirstIssues.map(async issue => {
+      if (
+        !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
+        projectNodeId
+      ) {
+        await addIssueToBoard({
+          projectId: projectNodeId,
+          columnId,
+          issue,
+          isProjectBeta
+        })
+      }
+    })
+  } catch (err) {
+    core.setFailed(`Action failed with error ${err}`)
+  } finally {
+    core.info(`
+    *** ACTION RUN - END ***
+    `)
+  }
+}
+
+module.exports = {
+  run
+}
+
+
+/***/ }),
+
 /***/ 7962:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
-const { graphql } = __nccwpck_require__(8467)
+const core = __nccwpck_require__(2186)
+const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { getOctokit } = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
@@ -8506,14 +8606,8 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
 `
 
 const getAllBoardIssuesProjectBeta =
-  (token, login, projectNumber) =>
+  (login, projectNumber) =>
   async ({ results, cursor } = { results: [] }) => {
-    const graphqlWithAuth = graphql.defaults({
-      headers: {
-        authorization: `token  ${token}`
-      }
-    })
-
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
@@ -8543,7 +8637,6 @@ const getAllBoardIssuesProjectBeta =
 
     if (hasNextPage) {
       await getAllBoardIssuesProjectBeta(
-        token,
         login,
         projectNumber
       )({
@@ -8565,7 +8658,8 @@ const getAllBoardIssuesProjectBeta =
     return { boardIssues, projectNodeId }
   }
 
-const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
+const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
+  const token = core.getInput('github-token', { required: true })
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
@@ -8597,16 +8691,11 @@ const getAllBoardIssuesProjectBoard = async (token, login, projectNumber) => {
   return { boardIssues, projectNodeId }
 }
 
-const getAllBoardIssues = async (
-  token,
-  login,
-  projectNumber,
-  isProjectBeta
-) => {
+const getAllBoardIssues = async (login, projectNumber, isProjectBeta) => {
   if (isProjectBeta) {
-    return getAllBoardIssuesProjectBeta(token, login, projectNumber)()
+    return getAllBoardIssuesProjectBeta(login, projectNumber)()
   }
-  return getAllBoardIssuesProjectBoard(token, login, projectNumber)
+  return getAllBoardIssuesProjectBoard(login, projectNumber)
 }
 
 module.exports = {
@@ -8621,7 +8710,7 @@ module.exports = {
 
 "use strict";
 
-const { graphql } = __nccwpck_require__(8467)
+const { graphqlWithAuth } = __nccwpck_require__(5525)
 const ms = __nccwpck_require__(900)
 
 const query = `
@@ -8640,7 +8729,7 @@ query goodFirstIssues($queryString: String!) {
 }
 `
 
-async function getGoodFirstIssues(token, organizations, timeInterval) {
+async function getGoodFirstIssues(organizations, timeInterval) {
   const today = new Date().getTime()
   const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
   const orgs = organizations
@@ -8648,12 +8737,6 @@ async function getGoodFirstIssues(token, organizations, timeInterval) {
     .split(',')
     .map(org => `org:${org}`)
     .join(' ')
-
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
 
   const queryString = `${orgs} is:open label:"good first issue" sort:updated-desc updated:">=${issuesTimeFrame}"`
 
@@ -8673,103 +8756,26 @@ module.exports = {
 
 /***/ }),
 
-/***/ 4351:
+/***/ 5525:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 const core = __nccwpck_require__(2186)
-const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(3618)
-const { logError, logInfo } = __nccwpck_require__(4353)
-const { getAllBoardIssues } = __nccwpck_require__(7962)
-const {
-  findColumnIdByName,
-  checkIssueAlreadyExists,
-  checkIsProjectBeta
-} = __nccwpck_require__(1608)
+const { graphql } = __nccwpck_require__(8467)
 
-module.exports = async function ({ context, token = null, inputs = {} }) {
-  if (
-    !inputs['organizations'] ||
-    !inputs['time-interval'] ||
-    !token ||
-    !inputs['project-number'] ||
-    !context.payload.organization.login
-  ) {
-    throw new Error('Missing required inputs')
-  }
-
-  try {
-    const {
-      organizations,
-      'time-interval': timeInterval,
-      'column-name': columnName
-    } = inputs
-
-    const projectNumber = Number(inputs['project-number'])
-
-    const isProjectBeta = await checkIsProjectBeta(token, login, projectNumber)
-
-    if (!isProjectBeta && !columnName) {
-      throw new Error('Column name is required')
+async function graphqlWithAuth(query, parameters) {
+  const token = core.getInput('github-token', { required: true })
+  const graphqlQuery = graphql.defaults({
+    headers: {
+      authorization: `token ${token}`
     }
+  })
+  return graphqlQuery(query, parameters)
+}
 
-    const login = context.payload.organization.login
-
-    const goodFirstIssues = await getGoodFirstIssues(
-      token,
-      organizations,
-      timeInterval
-    )
-    logInfo(
-      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
-        goodFirstIssues
-      )}`
-    )
-
-    if (goodFirstIssues.length === 0) {
-      logInfo('No good first issues found')
-      return
-    }
-
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      token,
-      login,
-      projectNumber,
-      isProjectBeta
-    )
-
-    logInfo(
-      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
-    )
-
-    const columnId = await findColumnIdByName(
-      token,
-      login,
-      projectNumber,
-      columnName,
-      isProjectBeta
-    )
-
-    goodFirstIssues.map(async issue => {
-      if (
-        !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
-        projectNodeId
-      ) {
-        await addIssueToBoard({
-          projectId: projectNodeId,
-          columnId,
-          issue,
-          token,
-          isProjectBeta
-        })
-      }
-    })
-  } catch (err) {
-    logError(err)
-    core.setFailed(err.message)
-  }
+module.exports = {
+  graphqlWithAuth
 }
 
 
@@ -8802,14 +8808,13 @@ exports.logWarning = log(warning)
 "use strict";
 
 
-const { graphql } = __nccwpck_require__(8467)
+const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { logInfo, logDebug } = __nccwpck_require__(4353)
 
 const addIssueToBoard = async ({
   projectId,
   columnId,
   issue,
-  token,
   isProjectBeta
 }) => {
   const { id: issueId, title: issueTitle, url: issueUrl } = issue
@@ -8836,20 +8841,14 @@ const addIssueToBoard = async ({
     }
   }`
 
-  const client = graphql.defaults({
-    headers: {
-      authorization: `token ${token}`
-    }
-  })
-
   let result
   if (isProjectBeta) {
-    result = await client(mutationProjectBeta, {
+    result = await graphqlWithAuth(mutationProjectBeta, {
       projectId,
       contentId: issueId
     })
   } else {
-    result = await client(mutationProjectBoard, {
+    result = await graphqlWithAuth(mutationProjectBoard, {
       projectId,
       columnId
     })
@@ -8883,12 +8882,10 @@ module.exports = {
 
 "use strict";
 
-
-const { graphql } = __nccwpck_require__(8467)
+const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { logDebug, logInfo } = __nccwpck_require__(4353)
 
 async function findColumnIdByName(
-  token,
   login,
   projectNumber,
   columnName,
@@ -8912,12 +8909,6 @@ async function findColumnIdByName(
       }
     }
   `
-
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
 
   const result = await graphqlWithAuth(query, {
     login,
@@ -8959,7 +8950,7 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   })
 }
 
-async function checkIsProjectBeta(token, login, projectNumber) {
+async function checkIsProjectBeta(login, projectNumber) {
   const queryProjectBeta = `
   query($login: String!, $projectNumber: Int!){
     organization(login: $login){
@@ -8970,12 +8961,6 @@ async function checkIsProjectBeta(token, login, projectNumber) {
     }
   }
 `
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
-
   const result = await graphqlWithAuth(queryProjectBeta, {
     login,
     projectNumber
@@ -9168,12 +9153,19 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(4351);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+
+const core = __nccwpck_require__(2186)
+
+const { run } = __nccwpck_require__(3348)
+
+run().catch(error => core.setFailed(error))
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;

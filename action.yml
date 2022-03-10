@@ -1,0 +1,28 @@
+
+name: Add issues to project board
+description: Add issues to github projects boards
+
+inputs:
+  github-token:
+    description: 'Github token'
+    required: true
+  organizations:
+    description: Comma separated organizations where to search issues in
+    required: true
+  time-interval: Time range filter for issues
+    description: 
+    required: true
+  project-number: 
+    description: Number of the project board where issues must be added. 
+  column-name:
+    description: Name of the project board column where issues must be added
+    required: false
+    default: 'to do'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'plus'
+  color: 'green'

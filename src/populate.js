@@ -1,13 +1,12 @@
 'use strict'
 
-const { graphql } = require('@octokit/graphql')
+const { graphqlWithAuth } = require('./graphql')
 const { logInfo, logDebug } = require('./log')
 
 const addIssueToBoard = async ({
   projectId,
   columnId,
   issue,
-  token,
   isProjectBeta
 }) => {
   const { id: issueId, title: issueTitle, url: issueUrl } = issue
@@ -34,20 +33,14 @@ const addIssueToBoard = async ({
     }
   }`
 
-  const client = graphql.defaults({
-    headers: {
-      authorization: `token ${token}`
-    }
-  })
-
   let result
   if (isProjectBeta) {
-    result = await client(mutationProjectBeta, {
+    result = await graphqlWithAuth(mutationProjectBeta, {
       projectId,
       contentId: issueId
     })
   } else {
-    result = await client(mutationProjectBoard, {
+    result = await graphqlWithAuth(mutationProjectBoard, {
       projectId,
       columnId
     })

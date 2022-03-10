@@ -1,5 +1,5 @@
 'use strict'
-const { graphql } = require('@octokit/graphql')
+const { graphqlWithAuth } = require('./graphql')
 const ms = require('ms')
 
 const query = `
@@ -18,7 +18,7 @@ query goodFirstIssues($queryString: String!) {
 }
 `
 
-async function getGoodFirstIssues(token, organizations, timeInterval) {
+async function getGoodFirstIssues(organizations, timeInterval) {
   const today = new Date().getTime()
   const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
   const orgs = organizations
@@ -26,12 +26,6 @@ async function getGoodFirstIssues(token, organizations, timeInterval) {
     .split(',')
     .map(org => `org:${org}`)
     .join(' ')
-
-  const graphqlWithAuth = graphql.defaults({
-    headers: {
-      authorization: `token  ${token}`
-    }
-  })
 
   const queryString = `${orgs} is:open label:"good first issue" sort:updated-desc updated:">=${issuesTimeFrame}"`
 
