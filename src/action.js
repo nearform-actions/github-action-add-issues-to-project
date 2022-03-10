@@ -19,9 +19,9 @@ async function run() {
   try {
     const organizations = core.getInput('organizations', { required: true })
     const timeInterval = core.getInput('time-interval', { required: true })
-    let projectNumber = Number(
-      core.getInput('project-number', { required: true })
-    )
+    let projectNumber =
+      core.getInput('project-number', { required: true }) &&
+      Number(core.getInput('project-number'))
     const columnName = core.getInput('column-name')
     const login = github.context.login
 
