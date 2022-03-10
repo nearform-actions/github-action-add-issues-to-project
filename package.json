@@ -1,7 +1,7 @@
 {
   "name": "github-action-add-issues-to-project",
   "version": "1.0.0",
-  "description": "Add issues to project board",
+  "description": "Add Github issues to project board",
   "main": "src/index.js",
   "scripts": {
     "lint": "eslint .",

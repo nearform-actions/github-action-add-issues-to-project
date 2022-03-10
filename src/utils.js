@@ -10,7 +10,9 @@ async function findColumnIdByName(
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return
+  if (isProjectBeta) {
+    return
+  }
 
   const query = `
   query getProjectColumns($login: String!, $projectNumber: Int!) {

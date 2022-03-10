@@ -8716,12 +8716,6 @@ module.exports = async function ({ context, token = null, inputs = {} }) {
     }
 
     const login = context.payload.organization.login
-    const grapqhqlQuery = (token, query, parameters) =>
-      graphql.defaults({
-        headers: {
-          authorization: `token  ${token}`
-        }
-      })
 
     const goodFirstIssues = await getGoodFirstIssues(
       token,
@@ -8900,7 +8894,9 @@ async function findColumnIdByName(
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return
+  if (isProjectBeta) {
+    return
+  }
 
   const query = `
   query getProjectColumns($login: String!, $projectNumber: Int!) {
@@ -9000,8 +8996,7 @@ async function checkIsProjectBeta(token, login, projectNumber) {
 module.exports = {
   findColumnIdByName,
   checkIssueAlreadyExists,
-  checkIsProjectBeta,
-  graphqlWithAuth
+  checkIsProjectBeta
 }
 
 
