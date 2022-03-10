@@ -8578,9 +8578,9 @@ const { getOctokit } = __nccwpck_require__(5438)
 const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
+query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
-    projectNext(number: $projectId) {
+    projectNext(number: $projectNumber) {
       id
       items (first: 100, after: $cursor) {
         pageInfo {
@@ -8611,7 +8611,7 @@ const getAllBoardIssuesProjectBeta =
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
-      projectId: Number(projectNumber)
+      projectNumber
     })
 
     const { errors, organization } = result
@@ -8885,32 +8885,34 @@ module.exports = {
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { logDebug, logInfo } = __nccwpck_require__(4353)
 
-const query = `
-query getProjectColumns($login: String!, $projectId: Int!) {
-    organization(login: $login) {
-      project(number: $projectId){
-        columns(first: 100) {
-         nodes {
-           id
-           name
-           }
-         }
-       }
-     }
-   }
-`
-
 async function findColumnIdByName(
   login,
   projectNumber,
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return null
+  if (isProjectBeta) {
+    return
+  }
+
+  const query = `
+  query getProjectColumns($login: String!, $projectNumber: Int!) {
+      organization(login: $login) {
+        project(number: $projectNumber){
+          columns(first: 100) {
+          nodes {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {

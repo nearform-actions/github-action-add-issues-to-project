@@ -2,32 +2,34 @@
 const { graphqlWithAuth } = require('./graphql')
 const { logDebug, logInfo } = require('./log')
 
-const query = `
-query getProjectColumns($login: String!, $projectId: Int!) {
-    organization(login: $login) {
-      project(number: $projectId){
-        columns(first: 100) {
-         nodes {
-           id
-           name
-           }
-         }
-       }
-     }
-   }
-`
-
 async function findColumnIdByName(
   login,
   projectNumber,
   columnName,
   isProjectBeta
 ) {
-  if (isProjectBeta) return null
+  if (isProjectBeta) {
+    return
+  }
+
+  const query = `
+  query getProjectColumns($login: String!, $projectNumber: Int!) {
+      organization(login: $login) {
+        project(number: $projectNumber){
+          columns(first: 100) {
+          nodes {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `
 
   const result = await graphqlWithAuth(query, {
     login,
-    projectId: Number(projectNumber)
+    projectNumber
   })
 
   if (result.errors) {

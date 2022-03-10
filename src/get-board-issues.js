@@ -5,9 +5,9 @@ const { getOctokit } = require('@actions/github')
 const { logDebug } = require('./log')
 
 const query = `
-query getAllBoardIssues($login: String!, $projectId: Int!, $cursor: String) {
+query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
-    projectNext(number: $projectId) {
+    projectNext(number: $projectNumber) {
       id
       items (first: 100, after: $cursor) {
         pageInfo {
@@ -38,7 +38,7 @@ const getAllBoardIssuesProjectBeta =
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
-      projectId: Number(projectNumber)
+      projectNumber
     })
 
     const { errors, organization } = result

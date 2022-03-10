@@ -22,7 +22,7 @@ tap.test('Find column id by name', async t => {
       graphqlWithAuth: async () => columnsMockData
     }
   })
-  const expectedResult = '1'
+
   const result = await moduleToTest.findColumnIdByName(
     'test-organization',
     1,
@@ -30,7 +30,7 @@ tap.test('Find column id by name', async t => {
     false
   )
 
-  t.same(result, expectedResult)
+  t.same(result, '1')
 })
 
 tap.test('Throw an error if cannot get project columns', async t => {
@@ -51,7 +51,7 @@ tap.test('Throw an error if cannot get project columns', async t => {
   )
 })
 
-tap.test('Return null if project beta board', async t => {
+tap.test('Throws an error if cannot find column', async t => {
   const columnsMockData = {
     organization: {
       project: {
@@ -78,11 +78,11 @@ tap.test('Return null if project beta board', async t => {
   )
 })
 
-tap.test('Find column id by name', async t => {
+tap.test('Return if the project is beta', async t => {
   const moduleToTest = t.mock('../src/utils', {
     '@octokit/graphql': {}
   })
-  const expectedResult = null
+
   const result = await moduleToTest.findColumnIdByName(
     'test-organization',
     1,
@@ -90,7 +90,7 @@ tap.test('Find column id by name', async t => {
     true
   )
 
-  t.same(result, expectedResult)
+  t.strictSame(result, undefined)
 })
 
 tap.test(
