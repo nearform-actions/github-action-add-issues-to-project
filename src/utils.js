@@ -1,6 +1,5 @@
 'use strict'
 const { graphqlWithAuth } = require('./graphql')
-const { logDebug, logInfo } = require('./log')
 
 async function findColumnIdByName(
   login,
@@ -33,7 +32,6 @@ async function findColumnIdByName(
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project columns`)
   }
 
@@ -48,8 +46,6 @@ async function findColumnIdByName(
   }
 
   const columnId = column.id
-
-  logInfo(`Found column id: ${columnId}`)
 
   return columnId
 }
@@ -84,7 +80,6 @@ async function checkIsProjectBeta(login, projectNumber) {
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project beta`)
   }
 

@@ -4,9 +4,9 @@ const core = require('@actions/core')
 const { graphqlWithAuth } = require('./graphql')
 
 const updateIssueStatus = async ({
-  fieldId,
   issueId,
   projectId,
+  projectFields,
   columnName
 }) => {
   const mutation = `
@@ -19,8 +19,27 @@ const updateIssueStatus = async ({
    }
    }
  `
+  const statusObj = projectFields.find(field => field.name === 'Status')
+  const projectStatuses = JSON.parse(statusObj.settings)
+
+  if (!projectStatuses) {
+    throw new Error(`Could not find project statuses`)
+  }
+
+  const status = projectStatuses.options.find(
+    status => status.name.trim().toLowerCase() === columnName.trim().toLowerCase
+  )
+
+  core.info(`Project status ${JSON.stringify(status)}`)
+
+  if (!status) {
+    throw new Error(`Could not find project status ${columnName}`)
+  }
+
+  const statusId = status.id
+
   const result = await graphqlWithAuth(mutation, {
-    fieldId,
+    fieldId: statusId,
     itemId: issueId,
     projectId,
     value: columnName
@@ -29,7 +48,7 @@ const updateIssueStatus = async ({
   const { errors } = result
 
   if (errors) {
-    core.setFailed(`Could not update issue status ${JSON.stringify(errors)}`)
+    throw new Error(`Could not update issue status`)
   }
 
   core.info(`Issue ${issueId} moved to column ${columnName} `)

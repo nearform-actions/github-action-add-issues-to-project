@@ -8477,7 +8477,6 @@ const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard } = __nccwpck_require__(3171)
-const { logInfo } = __nccwpck_require__(4353)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const {
   findColumnIdByName,
@@ -8510,14 +8509,14 @@ async function run() {
       timeInterval
     )
 
-    logInfo(
+    core.info(
       `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
         goodFirstIssues
       )}`
     )
 
     if (goodFirstIssues.length === 0) {
-      logInfo('No good first issues found')
+      core.info('No good first issues found')
       return
     }
 
@@ -8527,9 +8526,7 @@ async function run() {
       projectFields = {}
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
-    logInfo(
-      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
-    )
+    core.info(`Found ${boardIssues.length} existing board issues`)
 
     const columnId = await findColumnIdByName(
       login,
@@ -8577,7 +8574,6 @@ module.exports = {
 const core = __nccwpck_require__(2186)
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { getOctokit } = __nccwpck_require__(5438)
-const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
 query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
@@ -8625,7 +8621,6 @@ const getAllBoardIssuesProjectBeta =
     const { errors, organization } = result
 
     if (errors) {
-      logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
 
@@ -8640,8 +8635,6 @@ const getAllBoardIssuesProjectBeta =
       }
     } = organization
 
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
-    logDebug(`PROJECT FIELDS ${JSON.stringify(projectFields)}`)
     results.push(...edges)
 
     if (hasNextPage) {
@@ -8790,34 +8783,12 @@ module.exports = {
 
 /***/ }),
 
-/***/ 4353:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { debug, error, info, warning } = __nccwpck_require__(2186)
-
-const stringify = msg =>
-  typeof msg === 'string' ? msg : msg.stack || msg.toString()
-
-const log = logger => message => logger(stringify(message))
-
-exports.logDebug = log(debug)
-exports.logError = log(error)
-exports.logInfo = log(info)
-exports.logWarning = log(warning)
-
-
-/***/ }),
-
 /***/ 1608:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 const { graphqlWithAuth } = __nccwpck_require__(5525)
-const { logDebug, logInfo } = __nccwpck_require__(4353)
 
 async function findColumnIdByName(
   login,
@@ -8850,7 +8821,6 @@ async function findColumnIdByName(
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project columns`)
   }
 
@@ -8865,8 +8835,6 @@ async function findColumnIdByName(
   }
 
   const columnId = column.id
-
-  logInfo(`Found column id: ${columnId}`)
 
   return columnId
 }
@@ -8901,7 +8869,6 @@ async function checkIsProjectBeta(login, projectNumber) {
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project beta`)
   }
 
