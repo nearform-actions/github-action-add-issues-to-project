@@ -23,7 +23,7 @@ async function run() {
       core.getInput('project-number', { required: true }) &&
       Number(core.getInput('project-number'))
     const columnName = core.getInput('column-name')
-    const login = github.context.login
+    const login = context.payload.organization.login
 
     const isProjectBeta = await checkIsProjectBeta(login, projectNumber)
 
