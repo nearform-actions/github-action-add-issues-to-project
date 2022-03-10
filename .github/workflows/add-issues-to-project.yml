@@ -1,4 +1,5 @@
 name: Add issues to project
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,15 +9,16 @@ on:
       time-interval:
         description: 'time range filter'
         required: true
-        default: '10 days'
       project-number:
         description: 'project board number'
         required: true
       column-name: 
         description: 'project board column name'
         required: false
+        default: 'to do'
+
 jobs:
-  run:
+  setup:
     runs-on: ubuntu-latest
     steps:
      - name: Generate token
