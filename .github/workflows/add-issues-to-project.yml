@@ -8,18 +8,19 @@ on:
       time-interval:
         description: 'time range filter'
         required: true
-        default: '10 days'
       project-number:
         description: 'project board number'
         required: true
       column-name: 
         description: 'project board column name'
         required: false
+        default: 'to do'
+
 jobs:
-  run:
+  setup:
     runs-on: ubuntu-latest
     steps:
-     - name: Generate token
+      - name: Generate token
         id: generate_token
         uses: tibdex/github-app-token@v1
         with:
