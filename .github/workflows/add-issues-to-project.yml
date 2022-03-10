@@ -1,4 +1,4 @@
-name: add-issues-to-project
+name: Add issues to project
 
 on:
   workflow_dispatch:

@@ -9,8 +9,8 @@ inputs:
   organizations:
     description: Comma separated organizations where to search issues in
     required: true
-  time-interval: Time range filter for issues
-    description: 
+  time-interval: 
+    description: Time range filter for issues
     required: true
   project-number: 
     description: Number of the project board where issues must be added. 
