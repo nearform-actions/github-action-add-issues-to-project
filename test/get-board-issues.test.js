@@ -33,12 +33,8 @@ tap.test('Get projects beta board issues without pagination', async t => {
   }
 
   const moduleToTest = t.mock('../src/get-board-issues', {
-    '@octokit/graphql': {
-      graphql: {
-        defaults: () => {
-          return async () => boardIssuesMockData
-        }
-      }
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => boardIssuesMockData
     }
   })
 
@@ -47,7 +43,6 @@ tap.test('Get projects beta board issues without pagination', async t => {
     projectNodeId: 'project-id'
   }
   const results = await moduleToTest.getAllBoardIssues(
-    'test-token',
     'organization-login',
     1,
     true
@@ -110,15 +105,11 @@ tap.test('Get projects beta board issues with pagination', async t => {
 
   let timesCalled = 0
   const moduleToTest = t.mock('../src/get-board-issues', {
-    '@octokit/graphql': {
-      graphql: {
-        defaults: () => {
-          return async () => {
-            const results = boardIssuesMockData(timesCalled)
-            timesCalled++
-            return results
-          }
-        }
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => {
+        const results = boardIssuesMockData(timesCalled)
+        timesCalled++
+        return results
       }
     }
   })
@@ -128,7 +119,6 @@ tap.test('Get projects beta board issues with pagination', async t => {
     projectNodeId: 'project-id'
   }
   const results = await moduleToTest.getAllBoardIssues(
-    'test-token',
     'organization-login',
     1,
     true
@@ -160,12 +150,8 @@ tap.test('Return empty issues array if no board issues', async t => {
   }
 
   const moduleToTest = t.mock('../src/get-board-issues', {
-    '@octokit/graphql': {
-      graphql: {
-        defaults: () => {
-          return async () => boardIssuesMockData
-        }
-      }
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => boardIssuesMockData
     }
   })
 
@@ -174,7 +160,6 @@ tap.test('Return empty issues array if no board issues', async t => {
     projectNodeId: 'project-id'
   }
   const results = await moduleToTest.getAllBoardIssues(
-    'test-token',
     'organization-login',
     1,
     true
@@ -185,33 +170,27 @@ tap.test('Return empty issues array if no board issues', async t => {
 
 tap.test('Throw an error if cannot get issues', async t => {
   const moduleToTest = t.mock('../src/get-board-issues', {
-    '@octokit/graphql': {
-      graphql: {
-        defaults: () => {
-          return async () => ({
-            errors: [{ message: 'error' }],
-            data: {
-              organization: null
-            }
-          })
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => ({
+        errors: [{ message: 'error' }],
+        data: {
+          organization: null
         }
-      }
+      })
     }
   })
-  try {
-    await moduleToTest.getAllBoardIssues(
-      'test-token',
-      'organization-login',
-      1,
-      true
-    )
-  } catch (err) {
-    t.same(err, new Error('Error getting issues from board'))
-  }
+
+  t.rejects(
+    moduleToTest.getAllBoardIssues('organization-login', 1, true),
+    new Error('Error getting issues from board')
+  )
 })
 
 tap.test('Get legacy projects board issues', async t => {
   const moduleToTest = t.mock('../src/get-board-issues', {
+    '@actions/core': {
+      getInput: () => ''
+    },
     '@actions/github': {
       getOctokit: () => {
         return {
@@ -235,7 +214,6 @@ tap.test('Get legacy projects board issues', async t => {
     projectNodeId: 'project-id'
   }
   const results = await moduleToTest.getAllBoardIssues(
-    'test-token',
     'organization-login',
     1,
     false

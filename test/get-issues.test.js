@@ -9,18 +9,13 @@ tap.test('Get issues', async t => {
   }
 
   const moduleToTest = t.mock('../src/get-issues', {
-    '@octokit/graphql': {
-      graphql: {
-        defaults: () => {
-          return async () => issuesMockData
-        }
-      }
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => issuesMockData
     }
   })
 
   const expectedResults = [{ id: '1' }, { id: '2' }, { id: '3' }]
   const results = await moduleToTest.getGoodFirstIssues(
-    'test-token',
     'test-organization',
     '1 day'
   )
