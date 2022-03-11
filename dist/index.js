@@ -8476,8 +8476,9 @@ function wrappy (fn, cb) {
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(8033)
+const { addIssueToBoard, addIssueToBoardBeta } = __nccwpck_require__(8033)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
+const { updateIssueStatus } = __nccwpck_require__(8739)
 const {
   findColumnIdByName,
   checkIssueAlreadyExists,
@@ -8540,14 +8541,27 @@ async function run() {
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
         projectNodeId
       ) {
-        await addIssueToBoard({
-          projectId: projectNodeId,
-          projectFields,
-          columnId,
-          columnName,
-          issue,
-          isProjectBeta
-        })
+        if (isProjectBeta) {
+          const { projectIssueId } = await addIssueToBoardBeta({
+            projectId: projectNodeId,
+            issue
+          })
+
+          if (columnName) {
+            await updateIssueStatus({
+              issueId: projectIssueId,
+              projectId: projectNodeId,
+              projectFields,
+              columnName
+            })
+          }
+        } else {
+          await addIssueToBoard({
+            projectId: projectNodeId,
+            issue,
+            columnId
+          })
+        }
       }
     })
   } catch (err) {
@@ -8574,19 +8588,11 @@ module.exports = {
 
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const core = __nccwpck_require__(2186)
-const { updateIssueStatus } = __nccwpck_require__(8739)
 
-const addIssueToBoard = async ({
-  projectId,
-  projectFields,
-  columnId,
-  columnName,
-  issue,
-  isProjectBeta
-}) => {
-  const { id: issueId, title: issueTitle, url: issueUrl } = issue
+const addIssueToBoardBeta = async ({ projectId, issue }) => {
+  const { id: issueId, title: issueTitle } = issue
 
-  const mutationProjectBeta = `
+  const mutation = `
   mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
     addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
       projectNextItem {
@@ -8595,6 +8601,33 @@ const addIssueToBoard = async ({
       }
     }
   }`
+
+  let result = await graphqlWithAuth(mutation, {
+    projectId,
+    contentId: issueId
+  })
+
+  if (result.errors) {
+    throw new Error(`Error adding issue to board`)
+  }
+
+  if (!result?.addProjectNextItem?.projectNextItem?.id) {
+    throw new Error('Failed to add issue to board')
+  }
+
+  const {
+    addProjectNextItem: {
+      projectNextItem: { id }
+    }
+  } = result
+
+  core.info(`Added issue to board: id - ${id}, title - ${issueTitle}`)
+
+  return { projectIssueId: id }
+}
+
+const addIssueToBoard = async ({ projectId, issue, columnId }) => {
+  const { id: issueId, title: issueTitle, url: issueUrl } = issue
 
   const mutationProjectBoard = `
   mutation addIssueToBoard($columnId: ID!) {
@@ -8608,43 +8641,20 @@ const addIssueToBoard = async ({
     }
   }`
 
-  let result
-  if (isProjectBeta) {
-    result = await graphqlWithAuth(mutationProjectBeta, {
-      projectId,
-      contentId: issueId
-    })
-  } else {
-    result = await graphqlWithAuth(mutationProjectBoard, {
-      projectId,
-      columnId
-    })
-  }
+  const result = await graphqlWithAuth(mutationProjectBoard, {
+    projectId,
+    columnId
+  })
 
   if (result.errors) {
     throw new Error(`Error adding issue to board`)
   }
 
-  if (isProjectBeta) {
-    if (!result?.addProjectNextItem?.projectNextItem?.id) {
-      throw new Error('Failed to add issue to board')
-    }
-
-    const {
-      addProjectNextItem: {
-        projectNextItem: { id, title = '' }
-      }
-    } = result
-
-    core.info(`Added issue to board: id - ${id}, title - ${title}`)
-
-    if (columnName) {
-      await updateIssueStatus({ id, projectId, projectFields, columnName })
-    }
-  }
+  core.info(`Added issue to board: id - ${issueId}, title - ${issueTitle}`)
 }
 
 module.exports = {
+  addIssueToBoardBeta,
   addIssueToBoard
 }
 
@@ -8667,6 +8677,7 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
       id
       fields(first: 100){
         nodes{
+          id
           name
           settings
         }
