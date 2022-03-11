@@ -69,7 +69,9 @@ async function run() {
       ) {
         const { projectIssueId } = await addIssueToBoard({
           projectId: projectNodeId,
+          projectFields,
           columnId,
+          columnName,
           issue,
           isProjectBeta
         })
