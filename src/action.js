@@ -2,8 +2,7 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
 const { getGoodFirstIssues } = require('./get-issues')
-const { addIssueToBoard } = require('./populate')
-const { logInfo } = require('./log')
+const { addIssueToBoard } = require('./add-issue')
 const { getAllBoardIssues } = require('./get-board-issues')
 const {
   findColumnIdByName,
@@ -36,26 +35,24 @@ async function run() {
       timeInterval
     )
 
-    logInfo(
+    core.info(
       `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
         goodFirstIssues
       )}`
     )
 
     if (goodFirstIssues.length === 0) {
-      logInfo('No good first issues found')
+      core.info('No good first issues found')
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      login,
-      projectNumber,
-      isProjectBeta
-    )
+    const {
+      boardIssues = [],
+      projectNodeId = null,
+      projectFields = []
+    } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
-    logInfo(
-      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
-    )
+    core.info(`Found ${boardIssues.length} existing board issues`)
 
     const columnId = await findColumnIdByName(
       login,
@@ -71,7 +68,9 @@ async function run() {
       ) {
         await addIssueToBoard({
           projectId: projectNodeId,
+          projectFields,
           columnId,
+          columnName,
           issue,
           isProjectBeta
         })

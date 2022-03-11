@@ -8476,8 +8476,7 @@ function wrappy (fn, cb) {
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(3618)
-const { logInfo } = __nccwpck_require__(4353)
+const { addIssueToBoard } = __nccwpck_require__(8033)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const {
   findColumnIdByName,
@@ -8510,26 +8509,24 @@ async function run() {
       timeInterval
     )
 
-    logInfo(
+    core.info(
       `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
         goodFirstIssues
       )}`
     )
 
     if (goodFirstIssues.length === 0) {
-      logInfo('No good first issues found')
+      core.info('No good first issues found')
       return
     }
 
-    const { boardIssues = [], projectNodeId = null } = await getAllBoardIssues(
-      login,
-      projectNumber,
-      isProjectBeta
-    )
+    const {
+      boardIssues = [],
+      projectNodeId = null,
+      projectFields = []
+    } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
-    logInfo(
-      `Found ${boardIssues.length} board issues: ${JSON.stringify(boardIssues)}`
-    )
+    core.info(`Found ${boardIssues.length} existing board issues`)
 
     const columnId = await findColumnIdByName(
       login,
@@ -8545,7 +8542,9 @@ async function run() {
       ) {
         await addIssueToBoard({
           projectId: projectNodeId,
+          projectFields,
           columnId,
+          columnName,
           issue,
           isProjectBeta
         })
@@ -8567,6 +8566,91 @@ module.exports = {
 
 /***/ }),
 
+/***/ 8033:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { graphqlWithAuth } = __nccwpck_require__(5525)
+const core = __nccwpck_require__(2186)
+const { updateIssueStatus } = __nccwpck_require__(8739)
+
+const addIssueToBoard = async ({
+  projectId,
+  projectFields,
+  columnId,
+  columnName,
+  issue,
+  isProjectBeta
+}) => {
+  const { id: issueId, title: issueTitle, url: issueUrl } = issue
+
+  const mutationProjectBeta = `
+  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
+    addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
+      projectNextItem {
+        id
+        title
+      }
+    }
+  }`
+
+  const mutationProjectBoard = `
+  mutation addIssueToBoard($columnId: ID!) {
+    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
+      projectColumn {
+        name
+        cards {
+          totalCount
+        }
+      }
+    }
+  }`
+
+  let result
+  if (isProjectBeta) {
+    result = await graphqlWithAuth(mutationProjectBeta, {
+      projectId,
+      contentId: issueId
+    })
+  } else {
+    result = await graphqlWithAuth(mutationProjectBoard, {
+      projectId,
+      columnId
+    })
+  }
+
+  if (result.errors) {
+    throw new Error(`Error adding issue to board`)
+  }
+
+  if (isProjectBeta) {
+    if (!result?.addProjectNextItem?.projectNextItem?.id) {
+      throw new Error('Failed to add issue to board')
+    }
+
+    const {
+      addProjectNextItem: {
+        projectNextItem: { id, title = '' }
+      }
+    } = result
+
+    core.info(`Added issue to board: id - ${id}, title - ${title}`)
+
+    if (columnName) {
+      await updateIssueStatus({ id, projectId, projectFields, columnName })
+    }
+  }
+}
+
+module.exports = {
+  addIssueToBoard
+}
+
+
+/***/ }),
+
 /***/ 7962:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -8575,13 +8659,18 @@ module.exports = {
 const core = __nccwpck_require__(2186)
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { getOctokit } = __nccwpck_require__(5438)
-const { logDebug } = __nccwpck_require__(4353)
 
 const query = `
 query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
     projectNext(number: $projectNumber) {
       id
+      fields(first: 100){
+        nodes{
+          name
+          settings
+        }
+      }
       items (first: 100, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -8617,21 +8706,19 @@ const getAllBoardIssuesProjectBeta =
     const { errors, organization } = result
 
     if (errors) {
-      logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
 
     const {
       projectNext: {
         id: projectNodeId,
+        fields: { nodes: projectFields },
         items: {
           edges,
           pageInfo: { hasNextPage, endCursor }
         }
       }
     } = organization
-
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
 
     results.push(...edges)
 
@@ -8655,7 +8742,7 @@ const getAllBoardIssuesProjectBeta =
       return prev
     }, [])
 
-    return { boardIssues, projectNodeId }
+    return { boardIssues, projectNodeId, projectFields }
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
@@ -8781,97 +8868,68 @@ module.exports = {
 
 /***/ }),
 
-/***/ 4353:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const { debug, error, info, warning } = __nccwpck_require__(2186)
-
-const stringify = msg =>
-  typeof msg === 'string' ? msg : msg.stack || msg.toString()
-
-const log = logger => message => logger(stringify(message))
-
-exports.logDebug = log(debug)
-exports.logError = log(error)
-exports.logInfo = log(info)
-exports.logWarning = log(warning)
-
-
-/***/ }),
-
-/***/ 3618:
+/***/ 8739:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
+const core = __nccwpck_require__(2186)
 const { graphqlWithAuth } = __nccwpck_require__(5525)
-const { logInfo, logDebug } = __nccwpck_require__(4353)
 
-const addIssueToBoard = async ({
+const updateIssueStatus = async ({
+  issueId,
   projectId,
-  columnId,
-  issue,
-  isProjectBeta
+  projectFields,
+  columnName
 }) => {
-  const { id: issueId, title: issueTitle, url: issueUrl } = issue
+  const mutation = `
+  mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $value: String!) {
+    updateProjectNextItemField(input: {fieldId: $fieldId, itemId: $itemId, projectId: $projectId, value: $value}){
+     projectNextItem{
+       id
+       title
+     }
+   }
+   }
+ `
 
-  const mutationProjectBeta = `
-  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
-    addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
-      projectNextItem {
-        id
-        title
-      }
-    }
-  }`
+  const statusObj = projectFields.find(
+    field => field.name.trim().toLowerCase() === 'status'
+  )
+  const statusId = statusObj.id
+  const statusValues = JSON.parse(statusObj.settings)
 
-  const mutationProjectBoard = `
-  mutation addIssueToBoard($columnId: ID!) {
-    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
-      projectColumn {
-        name
-        cards {
-          totalCount
-        }
-      }
-    }
-  }`
-
-  let result
-  if (isProjectBeta) {
-    result = await graphqlWithAuth(mutationProjectBeta, {
-      projectId,
-      contentId: issueId
-    })
-  } else {
-    result = await graphqlWithAuth(mutationProjectBoard, {
-      projectId,
-      columnId
-    })
+  if (!statusValues) {
+    throw new Error(`Could not find project statuses`)
   }
 
-  logDebug(`Mutation result - ${JSON.stringify(result)}`)
+  const valueObj = statusValues.options.find(
+    value => value.name.trim().toLowerCase() === columnName.trim().toLowerCase()
+  )
+  if (!valueObj) {
+    throw new Error(`Could not find project status ${columnName}`)
+  }
+  const value = valueObj.id
 
-  if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
-    throw new Error(`Error adding issue to board`)
+  const result = await graphqlWithAuth(mutation, {
+    fieldId: statusId,
+    itemId: issueId,
+    projectId,
+    value
+  })
+
+  const { errors } = result
+
+  if (errors) {
+    throw new Error(`Could not update issue status`)
   }
 
-  if (isProjectBeta) {
-    if (!result?.addProjectNextItem?.projectNextItem?.id) {
-      throw new Error('Failed to add issue to board')
-    }
-    const { id, title = '' } = result.addProjectNextItem.projectNextItem
-    logInfo(`Added issue to board: id - ${id}, title - ${title}`)
-  }
+  core.info(`Issue ${issueId} moved to column ${columnName} `)
 }
 
 module.exports = {
-  addIssueToBoard
+  updateIssueStatus
 }
 
 
@@ -8883,7 +8941,6 @@ module.exports = {
 "use strict";
 
 const { graphqlWithAuth } = __nccwpck_require__(5525)
-const { logDebug, logInfo } = __nccwpck_require__(4353)
 
 async function findColumnIdByName(
   login,
@@ -8916,7 +8973,6 @@ async function findColumnIdByName(
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project columns`)
   }
 
@@ -8931,8 +8987,6 @@ async function findColumnIdByName(
   }
 
   const columnId = column.id
-
-  logInfo(`Found column id: ${columnId}`)
 
   return columnId
 }
@@ -8967,7 +9021,6 @@ async function checkIsProjectBeta(login, projectNumber) {
   })
 
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error getting project beta`)
   }
 

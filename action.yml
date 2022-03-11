@@ -17,7 +17,6 @@ inputs:
   column-name:
     description: Name of the project board column where issues must be added
     required: false
-    default: 'to do'
 
 runs:
   using: 'node16'

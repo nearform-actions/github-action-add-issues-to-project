@@ -1,11 +1,14 @@
 'use strict'
 
 const { graphqlWithAuth } = require('./graphql')
-const { logInfo, logDebug } = require('./log')
+const core = require('@actions/core')
+const { updateIssueStatus } = require('./update-issue-status')
 
 const addIssueToBoard = async ({
   projectId,
+  projectFields,
   columnId,
+  columnName,
   issue,
   isProjectBeta
 }) => {
@@ -46,10 +49,7 @@ const addIssueToBoard = async ({
     })
   }
 
-  logDebug(`Mutation result - ${JSON.stringify(result)}`)
-
   if (result.errors) {
-    logDebug(JSON.stringify(result.errors))
     throw new Error(`Error adding issue to board`)
   }
 
@@ -57,8 +57,18 @@ const addIssueToBoard = async ({
     if (!result?.addProjectNextItem?.projectNextItem?.id) {
       throw new Error('Failed to add issue to board')
     }
-    const { id, title = '' } = result.addProjectNextItem.projectNextItem
-    logInfo(`Added issue to board: id - ${id}, title - ${title}`)
+
+    const {
+      addProjectNextItem: {
+        projectNextItem: { id, title = '' }
+      }
+    } = result
+
+    core.info(`Added issue to board: id - ${id}, title - ${title}`)
+
+    if (columnName) {
+      await updateIssueStatus({ id, projectId, projectFields, columnName })
+    }
   }
 }
 

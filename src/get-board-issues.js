@@ -2,13 +2,18 @@
 const core = require('@actions/core')
 const { graphqlWithAuth } = require('./graphql')
 const { getOctokit } = require('@actions/github')
-const { logDebug } = require('./log')
 
 const query = `
 query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
   organization(login: $login) {
     projectNext(number: $projectNumber) {
       id
+      fields(first: 100){
+        nodes{
+          name
+          settings
+        }
+      }
       items (first: 100, after: $cursor) {
         pageInfo {
           hasNextPage
@@ -44,21 +49,19 @@ const getAllBoardIssuesProjectBeta =
     const { errors, organization } = result
 
     if (errors) {
-      logDebug(JSON.stringify(errors))
       throw new Error(`Error getting issues from board`)
     }
 
     const {
       projectNext: {
         id: projectNodeId,
+        fields: { nodes: projectFields },
         items: {
           edges,
           pageInfo: { hasNextPage, endCursor }
         }
       }
     } = organization
-
-    logDebug(`Get Board Issues result - ${JSON.stringify(edges)}`)
 
     results.push(...edges)
 
@@ -82,7 +85,7 @@ const getAllBoardIssuesProjectBeta =
       return prev
     }, [])
 
-    return { boardIssues, projectNodeId }
+    return { boardIssues, projectNodeId, projectFields }
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
