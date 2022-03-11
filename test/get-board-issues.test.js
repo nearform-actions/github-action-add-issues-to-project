@@ -43,7 +43,8 @@ tap.test('Get projects beta board issues without pagination', async t => {
 
   const expectedResults = {
     boardIssues: ['1', '2'],
-    projectNodeId: 'project-id'
+    projectNodeId: 'project-id',
+    projectFields: []
   }
   const results = await moduleToTest.getAllBoardIssues(
     'organization-login',
@@ -122,7 +123,8 @@ tap.test('Get projects beta board issues with pagination', async t => {
 
   const expectedResults = {
     boardIssues: ['1', '2', '3', '4'],
-    projectNodeId: 'project-id'
+    projectNodeId: 'project-id',
+    projectFields: []
   }
   const results = await moduleToTest.getAllBoardIssues(
     'organization-login',

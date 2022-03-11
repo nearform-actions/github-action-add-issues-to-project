@@ -67,7 +67,7 @@ const addIssueToBoard = async ({
     core.info(`Added issue to board: id - ${id}, title - ${title}`)
 
     if (columnName) {
-      await updateIssueStatus(id, projectId, projectFields, columnName)
+      await updateIssueStatus({ id, projectId, projectFields, columnName })
     }
   }
 }

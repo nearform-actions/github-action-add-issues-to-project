@@ -1,4 +1,5 @@
 name: Add issues to project
+
 on:
   workflow_dispatch:
     inputs:

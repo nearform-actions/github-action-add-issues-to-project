@@ -8523,7 +8523,7 @@ async function run() {
     const {
       boardIssues = [],
       projectNodeId = null,
-      projectFields = {}
+      projectFields = []
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     core.info(`Found ${boardIssues.length} existing board issues`)
@@ -8639,7 +8639,7 @@ const addIssueToBoard = async ({
     core.info(`Added issue to board: id - ${id}, title - ${title}`)
 
     if (columnName) {
-      await updateIssueStatus(id, projectId, projectFields, columnName)
+      await updateIssueStatus({ id, projectId, projectFields, columnName })
     }
   }
 }
@@ -8855,7 +8855,7 @@ async function graphqlWithAuth(query, parameters) {
   const token = core.getInput('github-token', { required: true })
   const graphqlQuery = graphql.defaults({
     headers: {
-      authorization: `token  ${token}`
+      authorization: `token ${token}`
     }
   })
   return graphqlQuery(query, parameters)

@@ -49,7 +49,7 @@ async function run() {
     const {
       boardIssues = [],
       projectNodeId = null,
-      projectFields = {}
+      projectFields = []
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     core.info(`Found ${boardIssues.length} existing board issues`)
