@@ -6,6 +6,9 @@ on:
       organizations:
         description: 'organizations for issues'
         required: true
+      issues-labels: 'issues labels'
+        required: false
+        default: 'good first issues'
       time-interval:
         description: 'time range filter'
         required: true
