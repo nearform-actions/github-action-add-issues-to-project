@@ -11,7 +11,8 @@ inputs:
     required: true
   issues-labels: 
     description: Comma separated labels of the issues to be found
-    required: true
+    required: false
+    default: 'good first issue'
   time-interval: 
     description: Time range filter for issues
     required: true
