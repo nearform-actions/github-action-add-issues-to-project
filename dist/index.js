@@ -8478,6 +8478,7 @@ const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard } = __nccwpck_require__(8033)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
+const { updateIssueStatus } = __nccwpck_require__(8739)
 const {
   findColumnIdByName,
   checkIssueAlreadyExists,
@@ -8540,14 +8541,20 @@ async function run() {
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
         projectNodeId
       ) {
-        await addIssueToBoard({
+        const { projectIssueId } = await addIssueToBoard({
           projectId: projectNodeId,
-          projectFields,
           columnId,
-          columnName,
           issue,
           isProjectBeta
         })
+        if (isProjectBeta && columnName && projectIssueId) {
+          await updateIssueStatus({
+            issueId: projectIssueId,
+            projectId: projectNodeId,
+            projectFields,
+            columnName
+          })
+        }
       }
     })
   } catch (err) {
@@ -8574,13 +8581,10 @@ module.exports = {
 
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const core = __nccwpck_require__(2186)
-const { updateIssueStatus } = __nccwpck_require__(8739)
 
 const addIssueToBoard = async ({
   projectId,
-  projectFields,
   columnId,
-  columnName,
   issue,
   isProjectBeta
 }) => {
@@ -8638,9 +8642,7 @@ const addIssueToBoard = async ({
 
     core.info(`Added issue to board: id - ${id}, title - ${title}`)
 
-    if (columnName) {
-      await updateIssueStatus({ id, projectId, projectFields, columnName })
-    }
+    return { projectIssueId: id }
   }
 }
 
@@ -8667,6 +8669,7 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
       id
       fields(first: 100){
         nodes{
+          id
           name
           settings
         }

@@ -10,6 +10,7 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
       id
       fields(first: 100){
         nodes{
+          id
           name
           settings
         }

@@ -2,13 +2,10 @@
 
 const { graphqlWithAuth } = require('./graphql')
 const core = require('@actions/core')
-const { updateIssueStatus } = require('./update-issue-status')
 
 const addIssueToBoard = async ({
   projectId,
-  projectFields,
   columnId,
-  columnName,
   issue,
   isProjectBeta
 }) => {
@@ -66,9 +63,7 @@ const addIssueToBoard = async ({
 
     core.info(`Added issue to board: id - ${id}, title - ${title}`)
 
-    if (columnName) {
-      await updateIssueStatus({ id, projectId, projectFields, columnName })
-    }
+    return { projectIssueId: id }
   }
 }
 
