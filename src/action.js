@@ -2,7 +2,7 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
 const { getGoodFirstIssues } = require('./get-issues')
-const { addIssueToBoard } = require('./add-issue')
+const { addIssueToBoard, addIssueToBoardBeta } = require('./add-issue')
 const { getAllBoardIssues } = require('./get-board-issues')
 const { updateIssueStatus } = require('./update-issue-status')
 const {
@@ -67,20 +67,25 @@ async function run() {
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
         projectNodeId
       ) {
-        const { projectIssueId } = await addIssueToBoard({
-          projectId: projectNodeId,
-          projectFields,
-          columnId,
-          columnName,
-          issue,
-          isProjectBeta
-        })
-        if (isProjectBeta && columnName && projectIssueId) {
-          await updateIssueStatus({
-            issueId: projectIssueId,
+        if (isProjectBeta) {
+          const { projectIssueId } = await addIssueToBoardBeta({
             projectId: projectNodeId,
-            projectFields,
-            columnName
+            issue
+          })
+
+          if (columnName) {
+            await updateIssueStatus({
+              issueId: projectIssueId,
+              projectId: projectNodeId,
+              projectFields,
+              columnName
+            })
+          }
+        } else {
+          await addIssueToBoard({
+            projectId: projectNodeId,
+            issue,
+            columnId
           })
         }
       }
