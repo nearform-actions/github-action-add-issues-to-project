@@ -1,7 +1,7 @@
 'use strict'
 const core = require('@actions/core')
 const github = require('@actions/github')
-const { getGoodFirstIssues } = require('./get-issues')
+const { getIssues } = require('./get-issues')
 const { addIssueToBoard, addIssueToBoardBeta } = require('./add-issue')
 const { getAllBoardIssues } = require('./get-board-issues')
 const { updateIssueStatus } = require('./update-issue-status')
@@ -18,6 +18,7 @@ async function run() {
 
   try {
     const organizations = core.getInput('organizations', { required: true })
+    const labels = core.getInput('issues-labels', { required: true })
     const timeInterval = core.getInput('time-interval', { required: true })
     let projectNumber =
       core.getInput('project-number', { required: true }) &&
@@ -31,19 +32,12 @@ async function run() {
       throw new Error('Column name is required for legacy project boards')
     }
 
-    const goodFirstIssues = await getGoodFirstIssues(
-      organizations,
-      timeInterval
-    )
+    const newIssues = await getIssues(organizations, labels, timeInterval)()
 
-    core.info(
-      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
-        goodFirstIssues
-      )}`
-    )
+    core.info(`Found ${newIssues.length} issues: ${JSON.stringify(newIssues)}`)
 
-    if (goodFirstIssues.length === 0) {
-      core.info('No good first issues found')
+    if (newIssues.length === 0) {
+      core.info(`No issues found with labels ${labels}`)
       return
     }
 
@@ -62,7 +56,7 @@ async function run() {
       isProjectBeta
     )
 
-    goodFirstIssues.map(async issue => {
+    newIssues.map(async issue => {
       if (
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
         projectNodeId
