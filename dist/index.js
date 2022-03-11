@@ -8893,13 +8893,13 @@ const updateIssueStatus = async ({
    }
    }
  `
-  core.info(`Project fields ${projectFields}`)
+
   const statusObj = projectFields.find(
     field => field.name.trim().toLowerCase() === 'status'
   )
   const statusId = statusObj.id
   const statusValues = JSON.parse(statusObj.settings)
-  core.info(`Status values ${statusValues}`)
+
   if (!statusValues) {
     throw new Error(`Could not find project statuses`)
   }
