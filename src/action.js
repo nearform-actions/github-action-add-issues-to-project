@@ -2,7 +2,7 @@
 const core = require('@actions/core')
 const github = require('@actions/github')
 const { getGoodFirstIssues } = require('./get-issues')
-const { addIssueToBoard } = require('./populate')
+const { addIssueToBoard } = require('./add-issue')
 const { getAllBoardIssues } = require('./get-board-issues')
 const {
   findColumnIdByName,

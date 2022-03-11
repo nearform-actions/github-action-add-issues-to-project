@@ -8476,7 +8476,7 @@ function wrappy (fn, cb) {
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
 const { getGoodFirstIssues } = __nccwpck_require__(2089)
-const { addIssueToBoard } = __nccwpck_require__(3171)
+const { addIssueToBoard } = __nccwpck_require__(8033)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const {
   findColumnIdByName,
@@ -8561,6 +8561,91 @@ async function run() {
 
 module.exports = {
   run
+}
+
+
+/***/ }),
+
+/***/ 8033:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { graphqlWithAuth } = __nccwpck_require__(5525)
+const core = __nccwpck_require__(2186)
+const { updateIssueStatus } = __nccwpck_require__(8739)
+
+const addIssueToBoard = async ({
+  projectId,
+  projectFields,
+  columnId,
+  columnName,
+  issue,
+  isProjectBeta
+}) => {
+  const { id: issueId, title: issueTitle, url: issueUrl } = issue
+
+  const mutationProjectBeta = `
+  mutation addIssueToBoard($projectId: ID!, $contentId: ID!) {
+    addProjectNextItem(input: { projectId: $projectId contentId: $contentId }) {
+      projectNextItem {
+        id
+        title
+      }
+    }
+  }`
+
+  const mutationProjectBoard = `
+  mutation addIssueToBoard($columnId: ID!) {
+    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
+      projectColumn {
+        name
+        cards {
+          totalCount
+        }
+      }
+    }
+  }`
+
+  let result
+  if (isProjectBeta) {
+    result = await graphqlWithAuth(mutationProjectBeta, {
+      projectId,
+      contentId: issueId
+    })
+  } else {
+    result = await graphqlWithAuth(mutationProjectBoard, {
+      projectId,
+      columnId
+    })
+  }
+
+  if (result.errors) {
+    throw new Error(`Error adding issue to board`)
+  }
+
+  if (isProjectBeta) {
+    if (!result?.addProjectNextItem?.projectNextItem?.id) {
+      throw new Error('Failed to add issue to board')
+    }
+
+    const {
+      addProjectNextItem: {
+        projectNextItem: { id, title = '' }
+      }
+    } = result
+
+    core.info(`Added issue to board: id - ${id}, title - ${title}`)
+
+    if (columnName) {
+      await updateIssueStatus(id, projectId, projectFields, columnName)
+    }
+  }
+}
+
+module.exports = {
+  addIssueToBoard
 }
 
 
@@ -8783,6 +8868,73 @@ module.exports = {
 
 /***/ }),
 
+/***/ 8739:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const core = __nccwpck_require__(2186)
+const { graphqlWithAuth } = __nccwpck_require__(5525)
+
+const updateIssueStatus = async ({
+  issueId,
+  projectId,
+  projectFields,
+  columnName
+}) => {
+  const mutation = `
+  mutation($fieldId: ID!, $itemId: ID!, $projectId: ID!, $value: String!) {
+    updateProjectNextItemField(input: {fieldId: $fieldId, itemId: $itemId, projectId: $projectId, value: $value}){
+     projectNextItem{
+       id
+       title
+     }
+   }
+   }
+ `
+  core.info(`Project fields ${projectFields}`)
+  const statusObj = projectFields.find(
+    field => field.name.trim().toLowerCase() === 'status'
+  )
+  const statusId = statusObj.id
+  const statusValues = JSON.parse(statusObj.settings)
+  core.info(`Status values ${statusValues}`)
+  if (!statusValues) {
+    throw new Error(`Could not find project statuses`)
+  }
+
+  const valueObj = statusValues.options.find(
+    value => value.name.trim().toLowerCase() === columnName.trim().toLowerCase()
+  )
+  if (!valueObj) {
+    throw new Error(`Could not find project status ${columnName}`)
+  }
+  const value = valueObj.id
+
+  const result = await graphqlWithAuth(mutation, {
+    fieldId: statusId,
+    itemId: issueId,
+    projectId,
+    value
+  })
+
+  const { errors } = result
+
+  if (errors) {
+    throw new Error(`Could not update issue status`)
+  }
+
+  core.info(`Issue ${issueId} moved to column ${columnName} `)
+}
+
+module.exports = {
+  updateIssueStatus
+}
+
+
+/***/ }),
+
 /***/ 1608:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -8884,14 +9036,6 @@ module.exports = {
   checkIssueAlreadyExists,
   checkIsProjectBeta
 }
-
-
-/***/ }),
-
-/***/ 3171:
-/***/ ((module) => {
-
-module.exports = eval("require")("./populate");
 
 
 /***/ }),

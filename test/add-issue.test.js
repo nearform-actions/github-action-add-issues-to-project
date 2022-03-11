@@ -6,7 +6,7 @@ tap.test('Add issue to project beta board', async t => {
     addProjectNextItem: { projectNextItem: { id: '1' } }
   }
 
-  const moduleToTest = t.mock('../src/populate', {
+  const moduleToTest = t.mock('../src/add-issue', {
     '../src/graphql.js': {
       graphqlWithAuth: async () => mutationResponseMockData
     }
@@ -24,7 +24,7 @@ tap.test('Add issue to project beta board', async t => {
 })
 
 tap.test('Throw an errow if cannot perform mutation', async t => {
-  const moduleToTest = t.mock('../src/populate', {
+  const moduleToTest = t.mock('../src/add-issue', {
     '../src/graphql.js': {
       graphqlWithAuth: async () => ({
         errors: [{ message: 'error' }]
@@ -44,7 +44,7 @@ tap.test('Throw an errow if cannot perform mutation', async t => {
 })
 
 tap.test('Throw an errow if cannot add new issue', async t => {
-  const moduleToTest = t.mock('../src/populate', {
+  const moduleToTest = t.mock('../src/add-issue', {
     '../src/graphql.js': {
       graphqlWithAuth: async () => ({
         addProjectNextItem: {}
@@ -68,7 +68,7 @@ tap.test('Add card to project board', async t => {
     addProjectCard: { projectColumn: { name: 'To do' } }
   }
 
-  const moduleToTest = t.mock('../src/populate', {
+  const moduleToTest = t.mock('../src/add-issue', {
     '../src/graphql.js': {
       graphqlWithAuth: async () => mutationResponseMockData
     }

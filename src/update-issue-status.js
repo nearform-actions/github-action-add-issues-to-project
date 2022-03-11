@@ -19,30 +19,30 @@ const updateIssueStatus = async ({
    }
    }
  `
-  const statusObj = projectFields.find(field => field.name === 'Status')
-  const projectStatuses = JSON.parse(statusObj.settings)
-
-  if (!projectStatuses) {
+  core.info(`Project fields ${projectFields}`)
+  const statusObj = projectFields.find(
+    field => field.name.trim().toLowerCase() === 'status'
+  )
+  const statusId = statusObj.id
+  const statusValues = JSON.parse(statusObj.settings)
+  core.info(`Status values ${statusValues}`)
+  if (!statusValues) {
     throw new Error(`Could not find project statuses`)
   }
 
-  const status = projectStatuses.options.find(
-    status => status.name.trim().toLowerCase() === columnName.trim().toLowerCase
+  const valueObj = statusValues.options.find(
+    value => value.name.trim().toLowerCase() === columnName.trim().toLowerCase()
   )
-
-  core.info(`Project status ${JSON.stringify(status)}`)
-
-  if (!status) {
+  if (!valueObj) {
     throw new Error(`Could not find project status ${columnName}`)
   }
-
-  const statusId = status.id
+  const value = valueObj.id
 
   const result = await graphqlWithAuth(mutation, {
     fieldId: statusId,
     itemId: issueId,
     projectId,
-    value: columnName
+    value
   })
 
   const { errors } = result
