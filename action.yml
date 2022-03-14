@@ -9,11 +9,16 @@ inputs:
   organizations:
     description: Comma separated organizations where to search issues in
     required: true
+  issues-labels: 
+    description: Comma separated labels of the issues to be found
+    required: false
+    default: 'good first issue'
   time-interval: 
     description: Time range filter for issues
     required: true
   project-number: 
-    description: Number of the project board where issues must be added. 
+    description: Number of the project board where issues must be added.
+    required: true 
   column-name:
     description: Name of the project board column where issues must be added
     required: false
