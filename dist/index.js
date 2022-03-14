@@ -8491,13 +8491,18 @@ async function run() {
     `)
 
   try {
-    const organizations = core.getInput('organizations', { required: true })
-    const timeInterval = core.getInput('time-interval', { required: true })
-    let projectNumber =
-      core.getInput('project-number', { required: true }) &&
-      Number(core.getInput('project-number'))
-    const columnName = core.getInput('column-name')
-    const login = github.context.payload.organization.login
+    // const organizations = core.getInput('organizations', { required: true })
+    // const timeInterval = core.getInput('time-interval', { required: true })
+    // let projectNumber =
+    //   core.getInput('project-number', { required: true }) &&
+    //   Number(core.getInput('project-number'))
+    // const columnName = core.getInput('column-name')
+    // const login = github.context.payload.organization.login
+    const organizations = 'fastify'
+    const timeInterval = '10 days'
+    const projectNumber = 12
+    const columnName = 'to do'
+    const login = 'nearform'
 
     const isProjectBeta = await checkIsProjectBeta(login, projectNumber)
 
@@ -8757,7 +8762,8 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
-  const token = core.getInput('github-token', { required: true })
+  // const token = core.getInput('github-token', { required: true })
+  const token = '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'
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
@@ -8863,7 +8869,8 @@ const core = __nccwpck_require__(2186)
 const { graphql } = __nccwpck_require__(8467)
 
 async function graphqlWithAuth(query, parameters) {
-  const token = core.getInput('github-token', { required: true })
+  // const token = core.getInput('github-token', { required: true })
+  const token = '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'
   const graphqlQuery = graphql.defaults({
     headers: {
       authorization: `token ${token}`

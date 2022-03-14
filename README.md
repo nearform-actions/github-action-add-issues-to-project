@@ -19,14 +19,14 @@ See also [action.yml](action.yml).
 
 # Usage
 
-The action requires a `github-token` to read repositories and read/write organization project boards. This token can be generated in two ways: 
+The action requires a `github-token` that can be generated in two ways: 
 
 ## 1) Creating and installing a Github App + using tibdex/github-app-token@v1
 
 Create a GitHub App under your organization with the following permissions:
 
 *Repository Permissions:*
-- Issues (Read)
+- Issues (Read/Write)
 
 *Organization Permissions*
 - Projects (Read/Write)
@@ -54,7 +54,7 @@ It takes the `PRIVATE_KEY` and `APP_ID` added to the repository `secrets` as inp
           private_key: ${{ secrets.PRIVATE_KEY }}
 ```
  
-### Example workflow:
+### Example workflow configured with Github App token:
 
 ```yaml
 name: Add issues to project
@@ -64,7 +64,8 @@ on:
       organizations:
         description: 'organizations for issues'
         required: true
-      issues-labels: 'issues labels'
+      issues-labels: 
+        description: 'issues labels'
         required: false
         default: 'good first issues'
       time-interval:
@@ -104,7 +105,54 @@ jobs:
 
 ## 2) Creating a PAT (personal access token)
 
+You can also configure this action by creating a GitHub [PAT ](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with the following permission:
+- repo --> public_repo
+- admin:org -> read/write:org
 
+Once the PAT is created save it as a GitHub secret in the repository.
+
+### Example workflow configured with PAT:
+
+```yaml
+name: Add issues to project
+on:
+  workflow_dispatch:
+    inputs:
+      organizations:
+        description: 'organizations for issues'
+        required: true
+      issues-labels: 
+        description: 'issues labels'
+        required: false
+        default: 'good first issues'
+      time-interval:
+        description: 'time range filter'
+        required: true
+      project-number:
+        description: 'project board number'
+        required: true
+      column-name: 
+        description: 'project board column name'
+        required: false
+        default: 'to do'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Add issues to board
+        uses: nearform/github-action-add-issues-to-project@v1
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          organizations: ${{ github.event.inputs.organizations }}
+          issues-labels: ${{ github.event.inputs.issues-labels }}
+          time-interval: ${{ github.event.inputs.time-interval }}
+          project-number: ${{ github.event.inputs.project-number }}
+          column-name: ${{ github.event.inputs.column-name }}
+
+```
 
 ## Output
 
