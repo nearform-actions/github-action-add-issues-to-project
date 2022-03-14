@@ -12,13 +12,9 @@ inputs:
   time-interval: 
     description: Time range filter for issues
     required: true
-  project-number: 
-<<<<<<< Updated upstream
-    description: Number of the project board where issues must be added. 
-=======
+  project-number:
     description: Number of the project board where issues must be added
     required: true 
->>>>>>> Stashed changes
   column-name:
     description: Name of the project board column where issues must be added
     required: false
