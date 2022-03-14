@@ -9,6 +9,10 @@ inputs:
   organizations:
     description: Comma separated organizations where to search issues in
     required: true
+  issues-labels: 
+    description: Comma separated labels of the issues to be found
+    required: false
+    default: 'good first issue'
   time-interval: 
     description: Time range filter for issues
     required: true

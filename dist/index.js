@@ -8475,7 +8475,7 @@ function wrappy (fn, cb) {
 
 const core = __nccwpck_require__(2186)
 const github = __nccwpck_require__(5438)
-const { getGoodFirstIssues } = __nccwpck_require__(2089)
+const { getIssues } = __nccwpck_require__(2089)
 const { addIssueToBoard, addIssueToBoardBeta } = __nccwpck_require__(8033)
 const { getAllBoardIssues } = __nccwpck_require__(7962)
 const { updateIssueStatus } = __nccwpck_require__(8739)
@@ -8491,18 +8491,14 @@ async function run() {
     `)
 
   try {
-    // const organizations = core.getInput('organizations', { required: true })
-    // const timeInterval = core.getInput('time-interval', { required: true })
-    // let projectNumber =
-    //   core.getInput('project-number', { required: true }) &&
-    //   Number(core.getInput('project-number'))
-    // const columnName = core.getInput('column-name')
-    // const login = github.context.payload.organization.login
-    const organizations = 'fastify'
-    const timeInterval = '10 days'
-    const projectNumber = 12
-    const columnName = 'to do'
-    const login = 'nearform'
+    const organizations = core.getInput('organizations', { required: true })
+    const labels = core.getInput('issues-labels', { required: true })
+    const timeInterval = core.getInput('time-interval', { required: true })
+    let projectNumber =
+      core.getInput('project-number', { required: true }) &&
+      Number(core.getInput('project-number'))
+    const columnName = core.getInput('column-name')
+    const login = github.context.payload.organization.login
 
     const isProjectBeta = await checkIsProjectBeta(login, projectNumber)
 
@@ -8510,19 +8506,12 @@ async function run() {
       throw new Error('Column name is required for legacy project boards')
     }
 
-    const goodFirstIssues = await getGoodFirstIssues(
-      organizations,
-      timeInterval
-    )
+    const newIssues = await getIssues(organizations, labels, timeInterval)()
 
-    core.info(
-      `Found ${goodFirstIssues.length} good first issues: ${JSON.stringify(
-        goodFirstIssues
-      )}`
-    )
+    core.info(`Found ${newIssues.length} issues: ${JSON.stringify(newIssues)}`)
 
-    if (goodFirstIssues.length === 0) {
-      core.info('No good first issues found')
+    if (newIssues.length === 0) {
+      core.info(`No issues found with labels ${labels}`)
       return
     }
 
@@ -8541,7 +8530,7 @@ async function run() {
       isProjectBeta
     )
 
-    goodFirstIssues.map(async issue => {
+    newIssues.map(async issue => {
       if (
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
         projectNodeId
@@ -8762,8 +8751,7 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
-  // const token = core.getInput('github-token', { required: true })
-  const token = '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'
+  const token = core.getInput('github-token', { required: true })
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
@@ -8818,8 +8806,8 @@ const { graphqlWithAuth } = __nccwpck_require__(5525)
 const ms = __nccwpck_require__(900)
 
 const query = `
-query goodFirstIssues($queryString: String!) {
-  search(first: 100, query: $queryString, type: ISSUE) {
+query goodFirstIssues($queryString: String!, $cursor: String) {
+  search(first: 100, query: $queryString, type: ISSUE, after: $cursor) {
     issueCount
     nodes {
       ... on Issue {
@@ -8829,32 +8817,59 @@ query goodFirstIssues($queryString: String!) {
         url
       }
     }
+    pageInfo{
+      hasNextPage
+      endCursor
+  }
   }
 }
 `
 
-async function getGoodFirstIssues(organizations, timeInterval) {
-  const today = new Date().getTime()
-  const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
-  const orgs = organizations
-    .replace(/\s/g, '')
-    .split(',')
-    .map(org => `org:${org}`)
-    .join(' ')
+const getIssues =
+  (organizations, labels, timeInterval) =>
+  async ({ results, cursor } = { results: [] }) => {
+    const today = new Date().getTime()
+    const issuesTimeFrame = new Date(today - ms(timeInterval)).toISOString()
+    const orgs = organizations
+      .replace(/\s/g, '')
+      .split(',')
+      .map(org => `org:${org}`)
+      .join(' ')
+    const labelsList = labels
+      .split(',')
+      .map(label => `"${label.trim()}"`)
+      .join(',')
 
-  const queryString = `${orgs} is:open label:"good first issue" sort:updated-desc updated:">=${issuesTimeFrame}"`
+    const queryString = `${orgs} is:open label:${labelsList} sort:updated-desc updated:">=${issuesTimeFrame}"`
 
-  const {
-    search: { nodes }
-  } = await graphqlWithAuth(query, {
-    queryString
-  })
+    const {
+      search: {
+        nodes,
+        pageInfo: { hasNextPage, endCursor }
+      }
+    } = await graphqlWithAuth(query, {
+      queryString,
+      cursor
+    })
 
-  return nodes
-}
+    results.push(...nodes)
+
+    if (hasNextPage) {
+      await getIssues(
+        organizations,
+        labels,
+        timeInterval
+      )({
+        results,
+        cursor: endCursor
+      })
+    }
+
+    return results
+  }
 
 module.exports = {
-  getGoodFirstIssues
+  getIssues
 }
 
 
@@ -8869,8 +8884,7 @@ const core = __nccwpck_require__(2186)
 const { graphql } = __nccwpck_require__(8467)
 
 async function graphqlWithAuth(query, parameters) {
-  // const token = core.getInput('github-token', { required: true })
-  const token = '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'
+  const token = core.getInput('github-token', { required: true })
   const graphqlQuery = graphql.defaults({
     headers: {
       authorization: `token ${token}`

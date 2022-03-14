@@ -6,6 +6,10 @@ on:
       organizations:
         description: 'organizations for issues'
         required: true
+      issues-labels: 
+        description: 'issues labels'
+        required: false
+        default: 'good first issues'
       time-interval:
         description: 'time range filter'
         required: true
@@ -34,6 +38,7 @@ jobs:
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
           organizations: ${{ github.event.inputs.organizations }}
+          issues-labels: ${{ github.event.inputs.issues-labels }}
           time-interval: ${{ github.event.inputs.time-interval }}
           project-number: ${{ github.event.inputs.project-number }}
           column-name: ${{ github.event.inputs.column-name }}
