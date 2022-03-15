@@ -7,12 +7,11 @@ inputs:
     description: 'Github token'
     required: true
   organizations:
-    description: Comma separated organizations where to search issues in
+    description: Comma separated list of Github organizations where to search issues in
     required: true
   issues-labels: 
-    description: Comma separated labels of the issues to be found
-    required: false
-    default: 'good first issue'
+    description: Comma separated list of labels of the issues to be searched
+    required: true
   time-interval: 
     description: Time range filter for issues
     required: true
