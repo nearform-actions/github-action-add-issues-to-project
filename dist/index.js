@@ -8806,7 +8806,7 @@ const { graphqlWithAuth } = __nccwpck_require__(5525)
 const ms = __nccwpck_require__(900)
 
 const query = `
-query goodFirstIssues($queryString: String!, $cursor: String) {
+query getIssues($queryString: String!, $cursor: String) {
   search(first: 100, query: $queryString, type: ISSUE, after: $cursor) {
     issueCount
     nodes {

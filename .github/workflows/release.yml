@@ -28,6 +28,7 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
           semver: ${{ github.event.inputs.semver }}
+          commit-message: 'chore: release {version}'
           sync-semver-tags: true
           build-command: |
             npm ci
