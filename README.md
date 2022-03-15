@@ -1,13 +1,22 @@
-# Add Good first issues to your project board
-Github script that populates your project board with good first issues from different organizations.
+![CI](https://github.com/nearform/github-action-add-issues-to-project/actions/workflows/ci.yml/badge.svg)
 
-![CI](https://github.com/nearform/github-action-bench-good-first-issues/actions/workflows/ci.yml/badge.svg)
+# Add issues to your organization project board
+Github action that populates your organization project board with open issues based on their labels.
 
-# Settings
+## Inputs
+- `organizations`: comma separated list of Github organizations where to search issues in.
+- `issues-labels`: comma separated list of labels of the open issues to be searched.
+- `time-interval`:  Time range filter for issues. Uses the ["ms"](https://www.npmjs.com/package/ms) package format.
+- `project-number`: The number of the project board where issues will be added.
+- `column-name`: The name of the column where issues will be added.
 
-You have two ways to configure this action.
+See also [action.yml](action.yml).
 
-## 1) Creating a Github App
+# Usage
+
+The action requires a `github-token` that can be generated in two ways: 
+
+## 1) Creating and installing a Github App + using tibdex/github-app-token@v1
 
 Create a GitHub App under your organization with the following permissions:
 
@@ -15,118 +24,122 @@ Create a GitHub App under your organization with the following permissions:
 - Issues (Read/Write)
 
 *Organization Permissions*
-- Projects (Read)
+- Projects (Read/Write)
 
 Copy the `Private key` and `App id` from the application created.
 
 Go to your repository and create the following secrets:
-- `GH_APP_PRIVATE_KEY`
-- `GH_APP_ID`
+- `PRIVATE_KEY`
+- `APP_ID`
 
 Install the application in your organization.
 
-This is necessary to generate the token that grants permissions to perform the actions.
+### uses: tibdex/github-app-token@v1
 
-Workflow configured with Github app tokens:
+This is a necessary step in the action workflow to generate the token that grants permissions to perform the action.
+
+It takes the `PRIVATE_KEY` and `APP_ID` added to the repository `secrets` as input.  
+
 ```yaml
-name: good-first-issues
+- name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+```
+
+### Example workflow configured with Github App token:
+
+The example below runs the action every day at midnight (`schedule` event). The action fetches open issues labelled `bug` or `good first issue` in the `fastify` and `nearform` organizations updated over the previous `25 hours`. The new issues found are added to the `to do` column of the organization project number `12`.
+
+```yaml
+name: Add issues to board
+
 on:
-  workflow_dispatch:
-    inputs:
-      organizations:
-        description: 'organizations to check'
-        required: true
-        default: 'fastify'
-      time-interval:
-        description: 'time range filter'
-        required: true
-        default: '10 days'
-      project-id:
-        description: 'project id'
-        required: true
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
-  run:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - name: Generate token
         id: generate_token
         uses: tibdex/github-app-token@v1
         with:
-          app_id: ${{ secrets.GH_APP_ID }}
-          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-      - uses: actions/checkout@master
-        with:
-          token: ${{ steps.generate_token.outputs.token }}
-          repository: nearform/github-action-bench-good-first-issues
-          ref: master
-          path: good-first-issues
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - uses: actions/github-script@v6
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+      - name: Add issues to board
+        uses: nearform/github-action-add-issues-to-project@v1
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
-          script: |
-            const script = require('./good-first-issues/dist/index.js')
-            await script({ context, token: "${{ steps.generate_token.outputs.token }}", inputs: ${{ toJSON(github.event.inputs) }} })
+          organizations: 'nearform, fastify'
+          issues-labels: 'bug, good first issue'
+          time-interval: '25 hours'
+          project-number: 12
+          column-name: ' to do'
+
 ```
 
 ## 2) Creating a PAT (personal access token)
-You can also configure this action by creating a GitHub [PAT ](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with the following permissions:
-- repo (all)
+
+You can also configure this action by creating a GitHub [PAT ](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with the following permission:
+- repo --> public_repo
 - admin:org -> read/write:org
 
-Once the PAT is created save it as a GitHub secret named `GH_PROJECTS_PAT` in the repository
+Once the PAT is created save it as a GitHub secret in the repository.
 
-Workflow configured with your PAT:  
+### Example workflow configured with PAT:
+
+In the example below the action is expected to be run manually (`worflow_dispatch`). The required inputs are specified in the `inputs` fields. As a default, the `issues-labels` to be searched are labelled `good first issue`, they have been updated over the past `7 days` and will be added to the project `to do` column.
 
 ```yaml
-name: good-first-issues
+name: Add issues to project
 on:
   workflow_dispatch:
     inputs:
       organizations:
-        description: 'organizations for issues'
+        description: 'organizations for issues (comma separated)'
         required: true
-        default: 'fastify'
+      issues-labels: 
+        description: 'issues labels (comma separated)'
+        default: 'good first issue'
+        required: true
       time-interval:
         description: 'time range filter'
+        default: '7 days'
         required: true
-        default: '10 days'
-      project-id:
-        description: 'project id'
+      project-number:
+        description: 'project board number'
         required: true
+      column-name: 
+        description: 'project board column name'
+        default: 'to do'
+        required: false
+
 jobs:
-  run:
+  setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - name: Add issues to board
+        uses: nearform/github-action-add-issues-to-project@v1
         with:
-          token: ${{ secrets.GH_PROJECTS_PAT }}
-          repository: nearform/github-action-bench-good-first-issues
-          ref: master
-          path: good-first-issues
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GH_PROJECTS_PAT }}
-          script: |
-            const script = require('./good-first-issues/dist/index.js')
-            await script({ context, token: "${{ secrets.GH_PROJECTS_PAT }}", inputs: ${{ toJSON(github.event.inputs) }} })
+          github-token: ${{ secrets.GH_PAT }}
+          organizations: ${{ github.event.inputs.organizations }}
+          issues-labels: ${{ github.event.inputs.issues-labels }}
+          time-interval: ${{ github.event.inputs.time-interval }}
+          project-number: ${{ github.event.inputs.project-number }}
+          column-name: ${{ github.event.inputs.column-name }}
+
 ```
 
-## Inputs:
-- `organizations`: Organizations from which good-first-issues will be fetched. Multiple organizations can be specified by seperating with space.
-- `time-interval`:  Time range filter for issues. Uses ["ms"](https://www.npmjs.com/package/ms) package format
-- `project-id`: The `id` number of the project board where issues will be added. This can be an organization project or a repository project.
+## :warning: Limitations and caveats :warning:
 
-Note: 
-- By default, all issues will be added to the `Todo` column.
-- Any issue which is already added to the board will be skipped.
+Due to some differences between Github's project **beta** boards and (legacy) project boards APIs, please be aware of the following limitations if the target project board is a project **beta** board:
+- the organization owning the board can only fetch issues from its own repositories, as the project **beta** board does not allow adding issues from different organizations.
+- the `column-name` field can be left empty as the issue will be added to whichever column specified in the project **beta** workflow (if defined) or to a 'No status' column.
 
+## Output
 
-## Limitations
-The GitHub API currently does not allow operations on a project board which is in a different organization. For this script to work, the project board and the repository from which this script is being invoked should be in the same organization.
+For each issue found a new card is added to the project board with a link to the existing issue. In projects **beta** boards, instead, the issues found are directly added to the specified organization project board.

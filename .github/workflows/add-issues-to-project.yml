@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       organizations:
-        description: 'organizations for issues'
+        description: 'organizations for issues (comma separated)'
         required: true
       issues-labels: 
-        description: 'issues labels'
-        required: false
-        default: 'good first issues'
+        description: 'issues labels (comma separated)'
+        required: true
       time-interval:
         description: 'time range filter'
         required: true
@@ -19,7 +18,6 @@ on:
       column-name: 
         description: 'project board column name'
         required: false
-        default: 'to do'
 
 jobs:
   setup:
@@ -31,8 +29,6 @@ jobs:
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.PRIVATE_KEY }}
-      - name: Checkout Code
-        uses: actions/checkout@v3
       - name: Add issues to board
         uses: nearform/github-action-add-issues-to-project@master
         with:
