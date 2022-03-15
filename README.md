@@ -100,10 +100,10 @@ on:
   workflow_dispatch:
     inputs:
       organizations:
-        description: 'organizations for issues'
+        description: 'organizations for issues (comma separated)'
         required: true
       issues-labels: 
-        description: 'issues labels'
+        description: 'issues labels (comma separated)'
         default: 'good first issue'
         required: true
       time-interval:
