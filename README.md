@@ -51,7 +51,7 @@ It takes the `PRIVATE_KEY` and `APP_ID` added to the repository `secrets` as inp
 
 ### Example workflow configured with Github App token:
 
-The example below runs the action every day at midnight (`schedule` event). The action fetches open issues labelled `bug` or `good first issue` in the `fastify` and `nearform` organizations updated over the previous `25 hours`. The new issues found are added to the `to do` column of the organization project number `12`.
+The example below runs the action every day at midnight (`schedule` event). The action (inputs have been commented out) fetches open issues labelled `bug` or `good first issue` in the `fastify` and `nearform` organizations updated over the previous `25 hours`. The new issues found are added to the `to do` column of the organization project number `12`.
 
 ```yaml
 name: Add issues to board
@@ -74,11 +74,11 @@ jobs:
         uses: nearform/github-action-add-issues-to-project@v1
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
-          organizations: 'nearform, fastify'
-          issues-labels: 'bug, good first issue'
-          time-interval: '25 hours'
-          project-number: 12
-          column-name: ' to do'
+          organizations: # 'nearform, fastify'
+          issues-labels: # 'bug, good first issue'
+          time-interval: # '25 hours'
+          project-number: # 12
+          column-name: # 'to do'
 
 ```
 
