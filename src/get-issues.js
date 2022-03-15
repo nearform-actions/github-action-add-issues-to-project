@@ -3,7 +3,7 @@ const { graphqlWithAuth } = require('./graphql')
 const ms = require('ms')
 
 const query = `
-query goodFirstIssues($queryString: String!, $cursor: String) {
+query getIssues($queryString: String!, $cursor: String) {
   search(first: 100, query: $queryString, type: ISSUE, after: $cursor) {
     issueCount
     nodes {
