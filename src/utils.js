@@ -56,11 +56,35 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   }
   return boardIssues.some(boardIssue => {
     return (
-      (boardIssue.note && boardIssue.note.includes(issue.title)) ||
+      (boardIssue.note && boardIssue.note.includes(issue.resourcePath)) ||
       (boardIssue.content_url &&
         boardIssue.content_url.includes(issue.resourcePath))
     )
   })
+}
+
+function checkIssueIsArchived(
+  projectNodeId,
+  archivedIssues,
+  issue,
+  isProjectBeta
+) {
+  if (isProjectBeta) {
+    const {
+      projectNextItems: { edges }
+    } = issue
+
+    const projectCard = edges.find(
+      edge => edge?.node.project.id === projectNodeId
+    )
+    return projectCard?.node && projectCard.node.isArchived
+  }
+
+  return archivedIssues.some(
+    archivedIssue =>
+      archivedIssue.node.note &&
+      archivedIssue.node.note.includes(issue.resourcePath)
+  )
 }
 
 async function checkIsProjectBeta(login, projectNumber) {
@@ -93,5 +117,6 @@ async function checkIsProjectBeta(login, projectNumber) {
 module.exports = {
   findColumnIdByName,
   checkIssueAlreadyExists,
+  checkIssueIsArchived,
   checkIsProjectBeta
 }

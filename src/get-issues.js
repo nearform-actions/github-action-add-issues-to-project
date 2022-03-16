@@ -12,6 +12,17 @@ query getIssues($queryString: String!, $cursor: String) {
         title
         resourcePath
         url
+        projectNextItems(first: 100){
+          edges{
+            node{
+              project {
+                title
+                id
+              }
+              isArchived
+            }
+          }
+        }
       }
     }
     pageInfo{

@@ -8482,7 +8482,8 @@ const { updateIssueStatus } = __nccwpck_require__(8739)
 const {
   findColumnIdByName,
   checkIssueAlreadyExists,
-  checkIsProjectBeta
+  checkIsProjectBeta,
+  checkIssueIsArchived
 } = __nccwpck_require__(1608)
 
 async function run() {
@@ -8517,8 +8518,9 @@ async function run() {
 
     const {
       boardIssues = [],
-      projectNodeId = null,
-      projectFields = []
+      projectNodeId,
+      projectFields = [],
+      archivedIssues = []
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     core.info(`Found ${boardIssues.length} existing board issues`)
@@ -8532,8 +8534,14 @@ async function run() {
 
     newIssues.map(async issue => {
       if (
+        projectNodeId &&
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
-        projectNodeId
+        !checkIssueIsArchived(
+          projectNodeId,
+          archivedIssues,
+          issue,
+          isProjectBeta
+        )
       ) {
         if (isProjectBeta) {
           const { projectIssueId } = await addIssueToBoardBeta({
@@ -8664,44 +8672,44 @@ const core = __nccwpck_require__(2186)
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { getOctokit } = __nccwpck_require__(5438)
 
-const query = `
-query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
-  organization(login: $login) {
-    projectNext(number: $projectNumber) {
-      id
-      fields(first: 100){
-        nodes{
-          id
-          name
-          settings
-        }
-      }
-      items (first: 100, after: $cursor) {
-        pageInfo {
-          hasNextPage
-          endCursor
-        }
-        edges {
-          cursor
-          node {
-            content {
-              ... on Issue {
-                id
-                number
-                title
-              }
-            }
-          }        
-        }
-      }
-    }
-  }
-}
-`
-
 const getAllBoardIssuesProjectBeta =
   (login, projectNumber) =>
   async ({ results, cursor } = { results: [] }) => {
+    const query = `
+    query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
+      organization(login: $login) {
+        projectNext(number: $projectNumber) {
+          id
+          fields(first: 100){
+            nodes{
+              id
+              name
+              settings
+            }
+          }
+          items (first: 100, after: $cursor) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            edges {
+              cursor
+              node {
+                content {
+                  ... on Issue {
+                    id
+                    number
+                    title
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+`
+
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
@@ -8751,6 +8759,30 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
+  const queryArchivedCards = `
+  query getArchivedCards($login: String!, $projectNumber: Int!) {
+    organization(login: $login) {
+     project(number: $projectNumber){
+      columns(first: 100){
+        edges{
+          node{
+            name 
+            cards(first:100, archivedStates: ARCHIVED){
+              edges{
+                node {
+                  id
+                  note
+                  isArchived
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    }
+  }
+  `
   const token = core.getInput('github-token', { required: true })
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
@@ -8780,7 +8812,30 @@ const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
   }
   const boardIssues = await getCards(projectColumns)
 
-  return { boardIssues, projectNodeId }
+  const getArchivedCards = async () => {
+    const result = await graphqlWithAuth(queryArchivedCards, {
+      login,
+      projectNumber
+    })
+
+    const { errors, organization } = result
+
+    if (errors) {
+      throw new Error(`Error getting archived cards from board`)
+    }
+
+    const {
+      project: {
+        columns: { edges }
+      }
+    } = organization
+
+    return edges.flatMap(edge => edge.node.cards.edges)
+  }
+
+  const archivedIssues = await getArchivedCards()
+
+  return { boardIssues, projectNodeId, archivedIssues }
 }
 
 const getAllBoardIssues = async (login, projectNumber, isProjectBeta) => {
@@ -8815,6 +8870,17 @@ query getIssues($queryString: String!, $cursor: String) {
         title
         resourcePath
         url
+        projectNextItems(first: 100){
+          edges{
+            node{
+              project {
+                title
+                id
+              }
+              isArchived
+            }
+          }
+        }
       }
     }
     pageInfo{
@@ -9029,11 +9095,35 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   }
   return boardIssues.some(boardIssue => {
     return (
-      (boardIssue.note && boardIssue.note.includes(issue.title)) ||
+      (boardIssue.note && boardIssue.note.includes(issue.resourcePath)) ||
       (boardIssue.content_url &&
         boardIssue.content_url.includes(issue.resourcePath))
     )
   })
+}
+
+function checkIssueIsArchived(
+  projectNodeId,
+  archivedIssues,
+  issue,
+  isProjectBeta
+) {
+  if (isProjectBeta) {
+    const {
+      projectNextItems: { edges }
+    } = issue
+
+    const projectCard = edges.find(
+      edge => edge?.node.project.id === projectNodeId
+    )
+    return projectCard?.node && projectCard.node.isArchived
+  }
+
+  return archivedIssues.some(
+    archivedIssue =>
+      archivedIssue.node.note &&
+      archivedIssue.node.note.includes(issue.resourcePath)
+  )
 }
 
 async function checkIsProjectBeta(login, projectNumber) {
@@ -9066,6 +9156,7 @@ async function checkIsProjectBeta(login, projectNumber) {
 module.exports = {
   findColumnIdByName,
   checkIssueAlreadyExists,
+  checkIssueIsArchived,
   checkIsProjectBeta
 }
 
