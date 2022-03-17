@@ -1,6 +1,9 @@
 'use strict'
 const tap = require('tap')
-const { checkIssueAlreadyExists } = require('../src/utils')
+const {
+  checkIssueAlreadyExists,
+  checkIssueIsArchived
+} = require('../src/utils')
 
 tap.test('Find column id by name', async t => {
   const columnsMockData = {
@@ -108,7 +111,7 @@ tap.test(
 
 tap.test('Return true if issue already exists on project board', async t => {
   const boardIssues = [
-    { note: 'first issue', content_url: 'first-issue' },
+    { note: 'first issue', content_url: '/first-issue' },
     { note: 'second issue', content_url: '/second-issue' },
     { note: null, content_url: '/third-issue' }
   ]
@@ -186,3 +189,70 @@ tap.test('Throw an error if cannot get project beta', async t => {
     new Error('Error getting project beta')
   )
 })
+
+tap.test('Return true if issue is archived on project beta', async t => {
+  const projectNodeId = 'test-project-id'
+  const issue1 = {
+    title: 'first issue',
+    resourcePath: '/first-issue',
+    projectNextItems: {
+      edges: [
+        { node: { project: { id: 'test-project-id' }, isArchived: true } }
+      ]
+    }
+  }
+  const issue2 = {
+    title: 'another issue',
+    resourcePath: '/another-issue',
+    projectNextItems: {
+      edges: [
+        { node: { project: { id: 'test-project-id' }, isArchived: false } }
+      ]
+    }
+  }
+
+  const issue3 = {
+    title: 'another issue',
+    resourcePath: '/another-issue',
+    projectNextItems: {
+      edges: [
+        { node: { project: { id: 'not-test-project-id' }, isArchived: true } }
+      ]
+    }
+  }
+  const result1 = checkIssueIsArchived(projectNodeId, [], issue1, true)
+  const result2 = checkIssueIsArchived(projectNodeId, [], issue2, true)
+  const result3 = checkIssueIsArchived(projectNodeId, [], issue3, true)
+  t.same(result1, true)
+  t.same(result2, false)
+  t.same(result3, false)
+})
+
+tap.test(
+  'Return true if issue is archived on legacy project board',
+  async t => {
+    const projectNodeId = 'test-project-id'
+    const archivedIssues = [
+      {
+        note: 'first issue /first-issue'
+      }
+    ]
+    const issue1 = { title: 'first issue', resourcePath: '/first-issue' }
+    const issue2 = { title: 'second issue', resourcePath: '/second-issue' }
+
+    const result1 = checkIssueIsArchived(
+      projectNodeId,
+      archivedIssues,
+      issue1,
+      false
+    )
+    const result2 = checkIssueIsArchived(
+      projectNodeId,
+      archivedIssues,
+      issue2,
+      false
+    )
+    t.same(result1, true)
+    t.same(result2, false)
+  }
+)

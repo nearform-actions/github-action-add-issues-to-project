@@ -8668,7 +8668,6 @@ module.exports = {
 
 "use strict";
 
-const core = __nccwpck_require__(2186)
 const { graphqlWithAuth } = __nccwpck_require__(5525)
 const { getOctokit } = __nccwpck_require__(5438)
 
@@ -8759,31 +8758,7 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
-  const queryArchivedCards = `
-  query getArchivedCards($login: String!, $projectNumber: Int!) {
-    organization(login: $login) {
-     project(number: $projectNumber){
-      columns(first: 100){
-        edges{
-          node{
-            name 
-            cards(first:100, archivedStates: ARCHIVED){
-              edges{
-                node {
-                  id
-                  note
-                  isArchived
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    }
-  }
-  `
-  const token = core.getInput('github-token', { required: true })
+  const token = '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'
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
@@ -8803,37 +8778,17 @@ const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
     const cardsArr = await Promise.all(
       projectColumns.map(async c => {
         const columnCards = await octokit.request(
-          `/projects/columns/${c.id}/cards`
+          `/projects/columns/${c.id}/cards?archived_state=all`
         )
         return columnCards
       })
     )
     return cardsArr.flatMap(c => c.data)
   }
-  const boardIssues = await getCards(projectColumns)
+  const issues = await getCards(projectColumns)
 
-  const getArchivedCards = async () => {
-    const result = await graphqlWithAuth(queryArchivedCards, {
-      login,
-      projectNumber
-    })
-
-    const { errors, organization } = result
-
-    if (errors) {
-      throw new Error(`Error getting archived cards from board`)
-    }
-
-    const {
-      project: {
-        columns: { edges }
-      }
-    } = organization
-
-    return edges.flatMap(edge => edge.node.cards.edges)
-  }
-
-  const archivedIssues = await getArchivedCards()
+  const boardIssues = issues.filter(issue => !issue.archived)
+  const archivedIssues = issues.filter(issue => issue.archived)
 
   return { boardIssues, projectNodeId, archivedIssues }
 }
@@ -9116,13 +9071,13 @@ function checkIssueIsArchived(
     const projectCard = edges.find(
       edge => edge?.node.project.id === projectNodeId
     )
-    return projectCard?.node && projectCard.node.isArchived
+
+    return !!projectCard && projectCard.node && projectCard.node.isArchived
   }
 
   return archivedIssues.some(
     archivedIssue =>
-      archivedIssue.node.note &&
-      archivedIssue.node.note.includes(issue.resourcePath)
+      archivedIssue.note && archivedIssue.note.includes(issue.resourcePath)
   )
 }
 

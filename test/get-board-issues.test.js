@@ -218,12 +218,18 @@ tap.test('Get legacy projects board issues', async t => {
           }
         }
       }
+    },
+    '../src/graphql.js': {
+      graphqlWithAuth: async () => ({
+        organization: { project: { columns: { edges: [] } } }
+      })
     }
   })
 
   const expectedResults = {
     boardIssues: [{ id: 1, note: 'Test note' }],
-    projectNodeId: 'project-id'
+    projectNodeId: 'project-id',
+    archivedIssues: []
   }
   const results = await moduleToTest.getAllBoardIssues(
     'organization-login',
