@@ -1,45 +1,46 @@
 'use strict'
+const core = require('@actions/core')
 const { graphqlWithAuth } = require('./graphql')
 const { getOctokit } = require('@actions/github')
 
-const getAllBoardIssuesProjectBeta =
-  (login, projectNumber) =>
-  async ({ results, cursor } = { results: [] }) => {
-    const query = `
-    query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
-      organization(login: $login) {
-        projectNext(number: $projectNumber) {
+const query = `
+query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) {
+  organization(login: $login) {
+    projectNext(number: $projectNumber) {
+      id
+      fields(first: 100){
+        nodes{
           id
-          fields(first: 100){
-            nodes{
-              id
-              name
-              settings
-            }
-          }
-          items (first: 100, after: $cursor) {
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            edges {
-              cursor
-              node {
-                content {
-                  ... on Issue {
-                    id
-                    number
-                    title
-                  }
-                }
+          name
+          settings
+        }
+      }
+      items (first: 100, after: $cursor) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            content {
+              ... on Issue {
+                id
+                number
+                title
               }
             }
           }
         }
       }
     }
+  }
+}
 `
 
+const getAllBoardIssuesProjectBeta =
+  (login, projectNumber) =>
+  async ({ results, cursor } = { results: [] }) => {
     const result = await graphqlWithAuth(query, {
       cursor,
       login,
@@ -89,7 +90,7 @@ const getAllBoardIssuesProjectBeta =
   }
 
 const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
-  const token = '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'
+  const token = core.getInput('github-token', { required: true })
   const octokit = getOctokit(token)
   const projects = await octokit.paginate('GET /orgs/{org}/projects', {
     org: login
