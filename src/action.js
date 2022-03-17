@@ -8,7 +8,8 @@ const { updateIssueStatus } = require('./update-issue-status')
 const {
   findColumnIdByName,
   checkIssueAlreadyExists,
-  checkIsProjectBeta
+  checkIsProjectBeta,
+  checkIssueIsArchived
 } = require('./utils')
 
 async function run() {
@@ -43,8 +44,9 @@ async function run() {
 
     const {
       boardIssues = [],
-      projectNodeId = null,
-      projectFields = []
+      projectNodeId,
+      projectFields = [],
+      archivedIssues = []
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     core.info(`Found ${boardIssues.length} existing board issues`)
@@ -58,8 +60,14 @@ async function run() {
 
     newIssues.map(async issue => {
       if (
+        projectNodeId &&
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
-        projectNodeId
+        !checkIssueIsArchived(
+          projectNodeId,
+          archivedIssues,
+          issue,
+          isProjectBeta
+        )
       ) {
         if (isProjectBeta) {
           const { projectIssueId } = await addIssueToBoardBeta({

@@ -30,7 +30,7 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
                 title
               }
             }
-          }        
+          }
         }
       }
     }
@@ -110,16 +110,19 @@ const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
     const cardsArr = await Promise.all(
       projectColumns.map(async c => {
         const columnCards = await octokit.request(
-          `/projects/columns/${c.id}/cards`
+          `/projects/columns/${c.id}/cards?archived_state=all`
         )
         return columnCards
       })
     )
     return cardsArr.flatMap(c => c.data)
   }
-  const boardIssues = await getCards(projectColumns)
+  const issues = await getCards(projectColumns)
 
-  return { boardIssues, projectNodeId }
+  const boardIssues = issues.filter(issue => !issue.archived)
+  const archivedIssues = issues.filter(issue => issue.archived)
+
+  return { boardIssues, projectNodeId, archivedIssues }
 }
 
 const getAllBoardIssues = async (login, projectNumber, isProjectBeta) => {

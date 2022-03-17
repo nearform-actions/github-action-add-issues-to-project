@@ -8482,7 +8482,8 @@ const { updateIssueStatus } = __nccwpck_require__(8739)
 const {
   findColumnIdByName,
   checkIssueAlreadyExists,
-  checkIsProjectBeta
+  checkIsProjectBeta,
+  checkIssueIsArchived
 } = __nccwpck_require__(1608)
 
 async function run() {
@@ -8517,8 +8518,9 @@ async function run() {
 
     const {
       boardIssues = [],
-      projectNodeId = null,
-      projectFields = []
+      projectNodeId,
+      projectFields = [],
+      archivedIssues = []
     } = await getAllBoardIssues(login, projectNumber, isProjectBeta)
 
     core.info(`Found ${boardIssues.length} existing board issues`)
@@ -8532,8 +8534,14 @@ async function run() {
 
     newIssues.map(async issue => {
       if (
+        projectNodeId &&
         !checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) &&
-        projectNodeId
+        !checkIssueIsArchived(
+          projectNodeId,
+          archivedIssues,
+          issue,
+          isProjectBeta
+        )
       ) {
         if (isProjectBeta) {
           const { projectIssueId } = await addIssueToBoardBeta({
@@ -8622,10 +8630,10 @@ const addIssueToBoardBeta = async ({ projectId, issue }) => {
 
 const addIssueToBoard = async ({ projectId, issue, columnId }) => {
   const { id: issueId, title: issueTitle, url: issueUrl } = issue
-
+  const note = issueTitle.replace(/[^\w\s]/g, '')
   const mutationProjectBoard = `
   mutation addIssueToBoard($columnId: ID!) {
-    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
+    addProjectCard(input: { note: "${note} ${issueUrl}", projectColumnId: $columnId }) {
       projectColumn {
         name
         cards {
@@ -8691,7 +8699,7 @@ query getAllBoardIssues($login: String!, $projectNumber: Int!, $cursor: String) 
                 title
               }
             }
-          }        
+          }
         }
       }
     }
@@ -8771,16 +8779,19 @@ const getAllBoardIssuesProjectBoard = async (login, projectNumber) => {
     const cardsArr = await Promise.all(
       projectColumns.map(async c => {
         const columnCards = await octokit.request(
-          `/projects/columns/${c.id}/cards`
+          `/projects/columns/${c.id}/cards?archived_state=all`
         )
         return columnCards
       })
     )
     return cardsArr.flatMap(c => c.data)
   }
-  const boardIssues = await getCards(projectColumns)
+  const issues = await getCards(projectColumns)
 
-  return { boardIssues, projectNodeId }
+  const boardIssues = issues.filter(issue => !issue.archived)
+  const archivedIssues = issues.filter(issue => issue.archived)
+
+  return { boardIssues, projectNodeId, archivedIssues }
 }
 
 const getAllBoardIssues = async (login, projectNumber, isProjectBeta) => {
@@ -8815,6 +8826,17 @@ query getIssues($queryString: String!, $cursor: String) {
         title
         resourcePath
         url
+        projectNextItems(first: 100){
+          edges{
+            node{
+              project {
+                title
+                id
+              }
+              isArchived
+            }
+          }
+        }
       }
     }
     pageInfo{
@@ -9029,11 +9051,34 @@ function checkIssueAlreadyExists(boardIssues, issue, isProjectBeta) {
   }
   return boardIssues.some(boardIssue => {
     return (
-      (boardIssue.note && boardIssue.note.includes(issue.title)) ||
+      (boardIssue.note && boardIssue.note.includes(issue.resourcePath)) ||
       (boardIssue.content_url &&
         boardIssue.content_url.includes(issue.resourcePath))
     )
   })
+}
+
+function checkIssueIsArchived(
+  projectNodeId,
+  archivedIssues,
+  issue,
+  isProjectBeta
+) {
+  if (isProjectBeta) {
+    const {
+      projectNextItems: { edges }
+    } = issue
+
+    const projectCard = edges.find(
+      edge => edge?.node.project.id === projectNodeId
+    )
+
+    return !!projectCard && projectCard?.node?.isArchived
+  }
+
+  return archivedIssues.some(archivedIssue =>
+    archivedIssue?.note?.includes(issue.resourcePath)
+  )
 }
 
 async function checkIsProjectBeta(login, projectNumber) {
@@ -9066,6 +9111,7 @@ async function checkIsProjectBeta(login, projectNumber) {
 module.exports = {
   findColumnIdByName,
   checkIssueAlreadyExists,
+  checkIssueIsArchived,
   checkIsProjectBeta
 }
 

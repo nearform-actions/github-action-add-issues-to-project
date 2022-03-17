@@ -213,7 +213,12 @@ tap.test('Get legacy projects board issues', async t => {
           },
           request: () => {
             return new Promise(resolve =>
-              resolve({ data: { id: 1, note: 'Test note' } })
+              resolve({
+                data: [
+                  { id: 1, note: 'Test note', archived: true },
+                  { id: 2, note: 'Test note 2', archived: false }
+                ]
+              })
             )
           }
         }
@@ -222,8 +227,9 @@ tap.test('Get legacy projects board issues', async t => {
   })
 
   const expectedResults = {
-    boardIssues: [{ id: 1, note: 'Test note' }],
-    projectNodeId: 'project-id'
+    boardIssues: [{ id: 2, note: 'Test note 2', archived: false }],
+    projectNodeId: 'project-id',
+    archivedIssues: [{ id: 1, note: 'Test note', archived: true }]
   }
   const results = await moduleToTest.getAllBoardIssues(
     'organization-login',
