@@ -9073,12 +9073,11 @@ function checkIssueIsArchived(
       edge => edge?.node.project.id === projectNodeId
     )
 
-    return !!projectCard && projectCard.node && projectCard.node.isArchived
+    return !!projectCard && projectCard?.node?.isArchived
   }
 
-  return archivedIssues.some(
-    archivedIssue =>
-      archivedIssue.note && archivedIssue.note.includes(issue.resourcePath)
+  return archivedIssues.some(archivedIssue =>
+    archivedIssue?.note?.includes(issue.resourcePath)
   )
 }
 
