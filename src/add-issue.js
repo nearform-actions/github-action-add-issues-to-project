@@ -42,10 +42,10 @@ const addIssueToBoardBeta = async ({ projectId, issue }) => {
 
 const addIssueToBoard = async ({ projectId, issue, columnId }) => {
   const { id: issueId, title: issueTitle, url: issueUrl } = issue
-
+  const note = issueTitle.replace(/[^\w\s]/g, '')
   const mutationProjectBoard = `
   mutation addIssueToBoard($columnId: ID!) {
-    addProjectCard(input: { note: "${issueTitle} ${issueUrl}", projectColumnId: $columnId }) {
+    addProjectCard(input: { note: "${note} ${issueUrl}", projectColumnId: $columnId }) {
       projectColumn {
         name
         cards {
