@@ -213,23 +213,23 @@ tap.test('Get legacy projects board issues', async t => {
           },
           request: () => {
             return new Promise(resolve =>
-              resolve({ data: { id: 1, note: 'Test note' } })
+              resolve({
+                data: [
+                  { id: 1, note: 'Test note', archived: true },
+                  { id: 2, note: 'Test note 2', archived: false }
+                ]
+              })
             )
           }
         }
       }
-    },
-    '../src/graphql.js': {
-      graphqlWithAuth: async () => ({
-        organization: { project: { columns: { edges: [] } } }
-      })
     }
   })
 
   const expectedResults = {
-    boardIssues: [{ id: 1, note: 'Test note' }],
+    boardIssues: [{ id: 2, note: 'Test note 2', archived: false }],
     projectNodeId: 'project-id',
-    archivedIssues: []
+    archivedIssues: [{ id: 1, note: 'Test note', archived: true }]
   }
   const results = await moduleToTest.getAllBoardIssues(
     'organization-login',
