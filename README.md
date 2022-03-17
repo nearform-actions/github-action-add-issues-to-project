@@ -139,7 +139,8 @@ jobs:
 Due to some differences between Github's project **beta** boards and (legacy) project boards APIs, please be aware of the following limitations if the target project board is a project **beta** board:
 - the organization owning the board can only fetch issues from its own repositories, as the project **beta** board does not allow adding issues from different organizations.
 
-## Special features 
+## Special features
+ 
 - Any unwanted card can be prevented from being added back into the board by being archived. See [how to archive a card](https://docs.github.com/en/issues/organizing-your-work-with-project-boards/tracking-work-with-project-boards/archiving-cards-on-a-project-board). 
 - If the target board is a project **beta** board, the `column-name` field can be left empty as the issue will be added to whichever column specified in the project **beta** workflow (if defined) or to a 'No status' column.
 
