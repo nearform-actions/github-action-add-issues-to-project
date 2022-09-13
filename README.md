@@ -73,7 +73,6 @@ jobs:
       - name: Add issues to board
         uses: nearform/github-action-add-issues-to-project@v1
         with:
-          github-token: ${{ steps.generate_token.outputs.token }}
           organizations: # 'nearform, fastify'
           issues-labels: # 'bug, good first issue'
           time-interval: # '25 hours'
@@ -125,7 +124,6 @@ jobs:
       - name: Add issues to board
         uses: nearform/github-action-add-issues-to-project@v1
         with:
-          github-token: ${{ secrets.GH_PAT }}
           organizations: ${{ github.event.inputs.organizations }}
           issues-labels: ${{ github.event.inputs.issues-labels }}
           time-interval: ${{ github.event.inputs.time-interval }}
