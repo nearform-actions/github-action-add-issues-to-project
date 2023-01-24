@@ -32,7 +32,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.PRIVATE_KEY }}
       - name: Add issues to board
-        uses: nearform/github-action-add-issues-to-project@master
+        uses: nearform/github-action-add-issues-to-project@main
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
           organizations: ${{ github.event.inputs.organizations }}
