@@ -12,15 +12,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nearform/github-action-add-issues-to-project"
+    "url": "git+https://github.com/nearform-actions/github-action-add-issues-to-project"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/nearform/github-action-add-issues-to-project/issues"
+    "url": "https://github.com/nearform-actions/github-action-add-issues-to-project/issues"
   },
-  "homepage": "https://github.com/nearform/github-action-add-issues-to-project#readme",
+  "homepage": "https://github.com/nearform-actions/github-action-add-issues-to-project#readme",
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
     "@commitlint/config-conventional": "^17.4.2",

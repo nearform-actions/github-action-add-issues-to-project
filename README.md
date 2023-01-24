@@ -1,4 +1,4 @@
-![CI](https://github.com/nearform/github-action-add-issues-to-project/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/nearform-actions/github-action-add-issues-to-project/actions/workflows/ci.yml/badge.svg)
 
 # Add issues to your organization project board
 Github action that populates your organization project board with open issues based on their labels.
