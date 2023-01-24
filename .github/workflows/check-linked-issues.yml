@@ -1,12 +1,16 @@
 name: Check linked issues
 
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, reopened, synchronize]
 
 jobs:
   check_pull_requests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     name: Check linked issues
     steps:
       - uses: nearform/github-action-check-linked-issues@v1

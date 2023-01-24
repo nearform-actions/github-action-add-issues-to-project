@@ -22,6 +22,8 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    permissions:
+      repository-projects: write
     steps:
       - name: Generate token
         id: generate_token

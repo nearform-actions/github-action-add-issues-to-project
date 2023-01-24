@@ -18,6 +18,10 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - name: Node.js runtime on build
         uses: actions/setup-node@v3.6.0
