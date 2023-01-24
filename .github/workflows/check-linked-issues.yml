@@ -8,8 +8,8 @@ jobs:
   check_pull_requests:
     runs-on: ubuntu-latest
     permissions:
-      actions: read
       issues: write
+      pull-requests: read
     name: Check linked issues
     steps:
       - uses: nearform/github-action-check-linked-issues@v1
