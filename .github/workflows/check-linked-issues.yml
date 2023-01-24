@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      pull-requests: read
+      pull-requests: write
     name: Check linked issues
     steps:
       - uses: nearform/github-action-check-linked-issues@v1
