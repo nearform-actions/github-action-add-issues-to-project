@@ -1,6 +1,7 @@
 'use strict'
 const core = require('@actions/core')
 const github = require('@actions/github')
+const toolkit = require('actions-toolkit')
 const { getIssues } = require('./get-issues')
 const { addIssueToBoard, addIssueToBoardBeta } = require('./add-issue')
 const { getAllBoardIssues } = require('./get-board-issues')
@@ -13,6 +14,9 @@ const {
 } = require('./utils')
 
 async function run() {
+  toolkit.logActionRefWarning()
+  toolkit.logRepoWarning()
+
   core.info(`
     *** ACTION RUN - START ***
     `)
