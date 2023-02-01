@@ -1,6 +1,6 @@
 {
   "name": "github-action-add-issues-to-project",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "Add Github issues to project board",
   "main": "src/index.js",
   "scripts": {
