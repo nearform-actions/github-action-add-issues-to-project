@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
     name: Check linked issues
     steps:
-      - uses: nearform/github-action-check-linked-issues@v1
+      - uses: nearform-actions/github-action-check-linked-issues@v1
         id: check-linked-issues
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

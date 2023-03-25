@@ -71,7 +71,7 @@ jobs:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.PRIVATE_KEY }}
       - name: Add issues to board
-        uses: nearform/github-action-add-issues-to-project@v1
+        uses: nearform-actions/github-action-add-issues-to-project@v1
         with:
           github-token: ${{ steps.generate_token.outputs.token }}
           organizations: # 'nearform, fastify'
@@ -123,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add issues to board
-        uses: nearform/github-action-add-issues-to-project@v1
+        uses: nearform-actions/github-action-add-issues-to-project@v1
         with:
           github-token: ${{ secrets.GH_PAT }}
           organizations: ${{ github.event.inputs.organizations }}
