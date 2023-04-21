@@ -7,8 +7,8 @@ Github action that populates your organization project board with open issues ba
 | input            | required | description   |
 |------------------|----------|---------------|
 | `github-token`   | yes      | Github token. |
-| `organizations`  | yes      | Comma separated list of Github organizations where to search issues in. |
-| `issues-labels`  | yes      | Comma separated list of labels of the open issues to be searched. |
+| `organizations`  | yes      | Comma-separated list of Github organizations where to search issues in. |
+| `issues-labels`  | yes      | Comma-separated list of labels of the open issues to be searched. |
 | `time-interval`  | yes      | Time range filter for issues. Uses the ["ms"](https://www.npmjs.com/package/ms) package format. |
 | `project-number` | yes      | The number of the project board where issues will be added. |
 | `column-name`    | yes      | The name of the column where issues will be added. |
@@ -22,9 +22,9 @@ The action requires a `github-token` that can be generated in two ways:
 
 Create a GitHub App under your organization with the following permissions:
 
-*Repository Permissions:*
+*Permissions:*
 - Repository: `issues: read/write`
-- Organization `projects: read/write`
+- Organization: `projects: read/write`
 
 Copy the `Private key` and `App id` from the application created.
 
