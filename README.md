@@ -4,13 +4,15 @@
 Github action that populates your organization project board with open issues based on their labels.
 
 ## Inputs
-- `organizations`: comma separated list of Github organizations where to search issues in.
-- `issues-labels`: comma separated list of labels of the open issues to be searched.
-- `time-interval`:  Time range filter for issues. Uses the ["ms"](https://www.npmjs.com/package/ms) package format.
-- `project-number`: The number of the project board where issues will be added.
-- `column-name`: The name of the column where issues will be added.
+| input            | required | description   |
+|------------------|----------|---------------|
+| `github-token`   | yes      | Github token. |
+| `organizations`  | yes      | Comma-separated list of Github organizations where to search issues in. |
+| `issues-labels`  | yes      | Comma-separated list of labels of the open issues to be searched. |
+| `time-interval`  | yes      | Time range filter for issues. Uses the ["ms"](https://www.npmjs.com/package/ms) package format. |
+| `project-number` | yes      | The number of the project board where issues will be added. |
+| `column-name`    | yes      | The name of the column where issues will be added. |
 
-See also [action.yml](action.yml).
 
 # Usage
 
@@ -20,11 +22,9 @@ The action requires a `github-token` that can be generated in two ways:
 
 Create a GitHub App under your organization with the following permissions:
 
-*Repository Permissions:*
-- Issues (Read/Write)
-
-*Organization Permissions*
-- Projects (Read/Write)
+*Permissions:*
+- Repository: `issues: read/write`
+- Organization: `projects: read/write`
 
 Copy the `Private key` and `App id` from the application created.
 
@@ -42,11 +42,11 @@ It takes the `PRIVATE_KEY` and `APP_ID` added to the repository `secrets` as inp
 
 ```yaml
 - name: Generate token
-        id: generate_token
-        uses: tibdex/github-app-token@v1
-        with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.PRIVATE_KEY }}
+  id: generate_token
+  uses: tibdex/github-app-token@v1
+  with:
+    app_id: ${{ secrets.APP_ID }}
+    private_key: ${{ secrets.PRIVATE_KEY }}
 ```
 
 ### Example workflow configured with Github App token:
@@ -85,14 +85,14 @@ jobs:
 ## 2) Creating a PAT (personal access token)
 
 You can also configure this action by creating a GitHub [PAT ](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with the following permission:
-- repo --> public_repo
-- admin:org -> read/write:org
+- `repo --> public_repo`
+- `admin:org -> read/write:org`
 
 Once the PAT is created save it as a GitHub secret in the repository.
 
 ### Example workflow configured with PAT:
 
-In the example below the action is expected to be run manually (`worflow_dispatch`). The required inputs are specified in the `inputs` fields. As a default, the `issues-labels` to be searched are labelled `good first issue`, they have been updated over the past `7 days` and will be added to the project `to do` column.
+In the example below the action is expected to be run manually (`workflow_dispatch`). The required inputs are specified in the `inputs` fields. As a default, the `issues-labels` to be searched are labelled `good first issue`, they have been updated over the past `7 days` and will be added to the project `to do` column.
 
 ```yaml
 name: Add issues to project
