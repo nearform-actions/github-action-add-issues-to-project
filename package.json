@@ -42,7 +42,7 @@
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
     "actions-toolkit": "github:nearform/actions-toolkit",
-    "@octokit/graphql": "^6.0.0",
+    "@octokit/graphql": "^6.0.1",
     "ms": "^2.1.3"
   }
 }
