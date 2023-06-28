@@ -3430,7 +3430,7 @@ var import_request3 = __nccwpck_require__(3758);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "6.0.0";
+var VERSION = "6.0.1";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(3758);
@@ -4046,7 +4046,7 @@ var import_endpoint = __nccwpck_require__(9723);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "7.0.0";
+var VERSION = "7.0.1";
 
 // pkg/dist-src/fetch-wrapper.js
 var import_is_plain_object = __nccwpck_require__(3287);
